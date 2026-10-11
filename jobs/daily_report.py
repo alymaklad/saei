@@ -1,10 +1,10 @@
-"""Evening report: today's applications, sent via free Telegram bot."""
+"""Evening report: today's applications, emailed to you."""
 from datetime import datetime, timezone, timedelta
 
 import config
 from db import get_session, init_db
 from models import Application, Job, ReportLog
-from agents.reporter_agent import build_daily_report, send_telegram_report
+from agents.reporter_agent import build_daily_report, send_report
 
 
 def run_daily_report():
@@ -25,7 +25,7 @@ def run_daily_report():
     report_text = build_daily_report(applications_today)
 
     try:
-        result = send_telegram_report(report_text)
+        result = send_report("Sa'ei daily report", report_text)
         if result.get("dry_run"):
             status = "dry_run"
         elif "error" in result:

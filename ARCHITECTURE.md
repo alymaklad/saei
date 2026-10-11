@@ -33,7 +33,7 @@ jobs/daily_run.py ──┐
                                └─> agents/apply_agent.py      (if good fit)
                          └─> writes Job/Application/SkillGap rows to SQLite
 
-jobs/daily_report.py ──> agents/reporter_agent.py  (reads today's Applications, sends Telegram)
+jobs/daily_report.py ──> agents/reporter_agent.py  (reads today's Applications, emails the report)
 jobs/weekly_news.py  ──> agents/news_agent.py + agents/reporter_agent.py
 jobs/apply_from_link.py ──> same orchestrator.py path as daily_run.py, for one URL
 
@@ -152,18 +152,18 @@ Runnable as `python jobs/apply_from_link.py <url> [cv_path]`.
 `run_daily_report()` queries `Application` joined to `Job` for everything
 created in the last 24 hours, builds a plain-text summary via
 `agents.reporter_agent.build_daily_report()`, sends it with
-`agents.reporter_agent.send_telegram_report()`, and — regardless of whether
+`agents.reporter_agent.send_report()` (an email), and — regardless of whether
 the send succeeded, failed, or was a dry run — writes a `ReportLog` row
 (`status` is one of `sent` / `dry_run` / `failed`) so the dashboard's Reports
 tab has a permanent record of every attempt, not just the last one. A raised
-exception from the Telegram call is caught and logged as `status="failed"`
+exception from the send is caught and logged as `status="failed"`
 rather than crashing the scheduler process.
 
 ### `jobs/weekly_news.py` — field news digest
 
 `run_weekly_news_digest(field="software engineering")` calls
 `agents.news_agent.fetch_news()` then `summarize_news()`, stores the summary
-as a `NewsDigest` row, sends it over Telegram the same way
+as a `NewsDigest` row, emails it the same way
 `daily_report.py` does, and logs a matching `ReportLog` row with the same
 sent/dry_run/failed bookkeeping. `field` is currently a hardcoded default
 rather than a dashboard setting — the module comment on `DEFAULT_FIELD` is
@@ -1101,18 +1101,19 @@ replacing a paid SendGrid option from the original design). Three concerns:
   so the Email tab's history is a real log, not just a cache of the last
   session.
 
-### `agents/reporter_agent.py` — Telegram delivery + daily summary text
+### `agents/reporter_agent.py` — report delivery + daily summary text
 
-Telegram Bot API, chosen specifically because it's free and unlimited
-forever, unlike Twilio WhatsApp (which only offers a small one-time trial
-credit, not a real free tier). Two functions:
+Reports are emailed through the same Gmail connection that sends
+applications (it replaced an earlier Telegram bot: one account to connect,
+and the reports land where job replies do). Two functions:
 
-- **`send_telegram_report(report_text)`** — same `DRY_RUN` short-circuit
-  pattern as the email agent. If not dry-run, POSTs to
-  `https://api.telegram.org/bot<token>/sendMessage`. Returns an `{"error":
-  ...}` dict (not an exception) if the bot token/chat ID aren't configured,
-  which is what `jobs/daily_report.py` and `jobs/weekly_news.py` check to
-  decide `status = "failed"` for the `ReportLog` row.
+- **`send_report(subject, report_text)`** — calls
+  `email_agent.send_report_email()`, which has the same `DRY_RUN`
+  short-circuit as application emails and sends to `REPORT_EMAIL_TO` (blank =
+  your own address). Returns an `{"error": ...}` dict (not an exception) when
+  Gmail isn't connected, which is what `jobs/daily_report.py` and
+  `jobs/weekly_news.py` check to decide `status = "failed"` for the
+  `ReportLog` row.
 - **`build_daily_report(applications_today)`** — pure text formatting, one
   bullet line per application (`title at company (status)`), or a fixed
   "No applications submitted today" string if the list is empty.
@@ -1217,7 +1218,7 @@ agent and job depends on them:
 - **Dry-run** — checked independently in three places that each perform a
   real external side effect: `orchestrator.py::auto_submit_node`,
   `agents/email_agent.py::send_application_email`, and
-  `agents/reporter_agent.py::send_telegram_report`. There's no single
+  `agents/email_agent.py::send_report_email`. There's no single
   global "dry-run wrapper" — each side-effecting function checks
   `config.DRY_RUN` itself.
 - **Never fabricate CV content** — asked for in the system prompt of

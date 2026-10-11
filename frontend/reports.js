@@ -1,5 +1,5 @@
 // Reports page: headline numbers, a plain-language summary built from real
-// data, skill gaps, where roles come from, and every dispatch -- Telegram
+// data, skill gaps, where roles come from, and every dispatch -- emailed reports
 // reports and application emails -- in one stream.
 
 let apps = [];
@@ -154,7 +154,7 @@ function renderDispatches() {
   const more = document.getElementById("reports-more");
   const list = dispatches.filter((d) => dispatchFilter === "all" || d.kind === dispatchFilter);
   if (!list.length) {
-    el.innerHTML = `<p class="sa-empty">${dispatchFilter === "email" ? "No application emails sent yet." : dispatchFilter === "telegram" ? "No Telegram reports yet — the scheduler sends them." : "Nothing dispatched yet."}</p>`;
+    el.innerHTML = `<p class="sa-empty">${dispatchFilter === "email" ? "No application emails sent yet." : dispatchFilter === "telegram" ? "No reports yet — the scheduler emails them at 20:00 and on Mondays." : "Nothing dispatched yet."}</p>`;
     more.hidden = true;
     return;
   }
@@ -188,7 +188,7 @@ async function load() {
       kind: "telegram", at: x.sent_at, status: x.status, dry_run: x.dry_run,
       label: x.report_type === "daily" ? "Application summary" : "News digest",
       title: x.report_type === "daily" ? "Daily application summary" : "Weekly news digest",
-      sub: "Sent over Telegram", content: x.content, error: x.error_message,
+      sub: "Report email", content: x.content, error: x.error_message,
     })),
     ...emails.map((x) => ({
       kind: "email", at: x.sent_at, status: x.status, dry_run: x.dry_run,

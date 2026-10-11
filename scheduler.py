@@ -43,7 +43,7 @@ def build_scheduler(scheduler_class=BlockingScheduler):
 # "Search now" click was already mid-batch is exactly the kind of overlap
 # that surfaced the bug). Add it back inside build_scheduler() if you need to
 # re-verify end-to-end after a change, but remember it also fires a REAL
-# Telegram send from the report jobs (since DRY_RUN=false), not a dry run.
+# report email from the report jobs (since DRY_RUN=false), not a dry run.
 #
 # from datetime import datetime, timedelta
 # soon = datetime.now() + timedelta(minutes=1)

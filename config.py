@@ -220,15 +220,25 @@ SEARCH_MAX_AGE_DAYS = _int_or_none("SEARCH_MAX_AGE_DAYS")
 GOOGLE_SHEETS_ID = os.getenv("GOOGLE_SHEETS_ID", "")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "credentials/service_account.json")
 
-# Gmail
+# Gmail -- sends your applications, and your daily report and weekly news.
+# Two ways to connect it, picked on the Settings page (EMAIL_METHOD):
+#   app_password = your Gmail address + a Google App Password
+#                  (myaccount.google.com/apppasswords, needs 2-Step
+#                  Verification). Nothing to set up in Google Cloud.
+#   oauth        = "Connect with Google" through an OAuth client file you
+#                  create in Google Cloud Console (GMAIL_CREDENTIALS_JSON).
+# Blank = app_password once one is saved, otherwise oauth.
+EMAIL_METHOD = os.getenv("EMAIL_METHOD", "").strip().lower()
+GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "").strip()
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "")
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = _int("SMTP_PORT", 465)
 GMAIL_CREDENTIALS_JSON = os.getenv("GMAIL_CREDENTIALS_JSON", "credentials/gmail_credentials.json")
 GMAIL_TOKEN_JSON = os.getenv("GMAIL_TOKEN_JSON", "credentials/gmail_token.json")
 APPLICANT_NAME = os.getenv("APPLICANT_NAME", "")
 APPLICANT_EMAIL = os.getenv("APPLICANT_EMAIL", "")
-
-# Telegram
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+# Where the daily report and weekly news go. Blank = your own Gmail address.
+REPORT_EMAIL_TO = os.getenv("REPORT_EMAIL_TO", "").strip()
 
 # Whitelist: entries look like "greenhouse:stripe" or "lever:netflix".
 # Empty by default — nothing auto-submits until you explicitly add an entry

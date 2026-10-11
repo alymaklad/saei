@@ -456,7 +456,7 @@ async function followRun() {
     searchBtn.disabled = false;
     if (status.error) showRunFailure(status.error);
     else if (status.result) showResult(status.result);
-    else paintRun("done", {});   // a scheduled run finished; it reports through Telegram
+    else paintRun("done", {});   // a scheduled run finished; its report is emailed
     loadSnapshots();
     return;
   }

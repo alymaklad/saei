@@ -557,7 +557,6 @@ document.getElementById("save-all").addEventListener("click", () => {
 // ---- Notifications & channels (Gmail moved here from the Email page) -------
 
 const connectBtn = document.getElementById("connect-btn");
-const connectMessage = document.getElementById("connect-message");
 
 function setChip(el, text, good) {
   el.textContent = text;
@@ -565,63 +564,141 @@ function setChip(el, text, good) {
     ? "bg-secondary-container text-on-secondary-fixed-variant" : "bg-tertiary-fixed text-on-tertiary-fixed-variant"}`;
 }
 
-async function loadGmailStatus() {
-  const statusEl = document.getElementById("gmail-status");
+// ---- Gmail: two ways to connect, one of them active -----------------------------
+
+let emailStatus = null;
+let shownMethod = null;
+
+function showEmailMethod(method) {
+  shownMethod = method;
+  document.querySelectorAll("[data-email-method]").forEach((tab) => {
+    const on = tab.dataset.emailMethod === method;
+    tab.classList.toggle("is-active", on);
+    tab.setAttribute("aria-selected", on);
+  });
+  document.querySelectorAll("[data-email-panel]").forEach((panel) => {
+    panel.hidden = panel.dataset.emailPanel !== method;
+  });
+}
+
+function paintEmailStatus(s) {
+  emailStatus = s;
   const chip = document.getElementById("gmail-chip");
-  try {
-    const s = await getJSON("/api/email/status");
-    if (s.authenticated) {
-      statusEl.textContent = "Connected — Gmail is authorized to send.";
-      setChip(chip, "Connected", true);
-      connectBtn.innerHTML = `<span class="ms text-[16px]">sync</span>Reconnect`;
-    } else if (!s.credentials_configured) {
-      statusEl.textContent = "Not set up — no OAuth client file found yet (see below).";
-      setChip(chip, "Not set up", false);
-    } else {
-      statusEl.textContent = "Not connected yet.";
-      setChip(chip, "Not connected", false);
-    }
-  } catch (e) {
-    statusEl.textContent = "Could not reach the backend API.";
+  const statusEl = document.getElementById("gmail-status");
+  const how = s.method === "app_password" ? "signed in with an App Password" : "connected with Google (OAuth)";
+  if (s.authenticated) {
+    setChip(chip, "Connected", true);
+    statusEl.textContent = `Sending as ${s.address || "your Gmail account"} — ${how}.`;
+  } else {
+    setChip(chip, "Not connected", false);
+    statusEl.textContent = "Not connected yet — choose a way below.";
+  }
+  if (!shownMethod) showEmailMethod(s.method);
+
+  const address = document.getElementById("gmail-address");
+  if (!address.value && s.method === "app_password") address.value = s.address || "";
+  document.getElementById("gmail-app-password").placeholder = s.app_password_saved
+    ? "Saved — enter a new one to replace it" : "16 letters, e.g. abcd efgh ijkl mnop";
+  document.getElementById("app-password-forget").hidden = !s.app_password_saved;
+
+  const oauth = document.getElementById("oauth-status");
+  oauth.textContent = s.oauth_authenticated ? "Connected through OAuth."
+    : s.credentials_configured ? "Not connected yet." : "Not set up — no OAuth client file found yet (see below).";
+  connectBtn.innerHTML = s.oauth_authenticated
+    ? `<span class="ms text-[16px]">sync</span>Reconnect` : `<span class="ms text-[16px]">link</span>Connect Gmail`;
+
+  const reportsChip = document.getElementById("reports-chip");
+  const note = document.getElementById("reports-note");
+  const reportTo = document.getElementById("report-to");
+  if (document.activeElement !== reportTo) reportTo.value = s.report_to_custom ? s.report_to : "";
+  reportTo.placeholder = s.address || "Your Gmail address";
+  if (!s.authenticated) {
+    setChip(reportsChip, "Off", false);
+    note.textContent = "Connect Gmail above and reports start arriving.";
+  } else {
+    setChip(reportsChip, s.dry_run ? "Dry run" : "On", !s.dry_run);
+    note.textContent = s.dry_run
+      ? `Dry run is on, so reports are logged on the Reports page rather than sent to ${s.report_to}.`
+      : `Reports go to ${s.report_to}.`;
   }
 }
 
+async function loadGmailStatus() {
+  try {
+    paintEmailStatus(await getJSON("/api/email/status"));
+  } catch (e) {
+    document.getElementById("gmail-status").textContent = "Could not reach the backend API.";
+  }
+}
+
+function emailMessage(id, text, ok) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `mt-1 text-body-sm ${ok === undefined ? "text-on-surface-variant" : ok ? "save-success" : "save-error"}`;
+}
+
+document.querySelectorAll("[data-email-method]").forEach((tab) => {
+  tab.addEventListener("click", async () => {
+    const method = tab.dataset.emailMethod;
+    showEmailMethod(method);
+    // Switching only takes effect once that way is actually connected; until
+    // then the working connection keeps sending.
+    const ready = method === "app_password" ? emailStatus?.app_password_saved : emailStatus?.oauth_authenticated;
+    if (ready && emailStatus?.method !== method) {
+      try { paintEmailStatus(await postJSON("/api/email/method", { method })); } catch (e) { /* keep the old one */ }
+    }
+  });
+});
+
+document.getElementById("app-password-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("app-password-btn");
+  const address = document.getElementById("gmail-address").value.trim();
+  const passwordInput = document.getElementById("gmail-app-password");
+  btn.disabled = true;
+  emailMessage("app-password-message", "Checking with Gmail…");
+  try {
+    paintEmailStatus(await postJSON("/api/email/app-password", { address, app_password: passwordInput.value }));
+    passwordInput.value = "";
+    emailMessage("app-password-message", "Signed in. Gmail accepted it.", true);
+  } catch (err) {
+    emailMessage("app-password-message", err.message || "Sign-in failed.", false);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("app-password-forget").addEventListener("click", async () => {
+  if (!confirm("Forget the saved App Password? Sending stops until you sign in again.")) return;
+  try {
+    paintEmailStatus(await postJSON("/api/email/disconnect", {}));
+    emailMessage("app-password-message", "Forgotten. You can also revoke it at myaccount.google.com/apppasswords.");
+  } catch (err) {
+    emailMessage("app-password-message", err.message || "Could not forget it.", false);
+  }
+});
+
 connectBtn.addEventListener("click", async () => {
   connectBtn.disabled = true;
-  connectMessage.textContent = "Opening a browser tab for Google's consent screen…";
-  connectMessage.className = "mt-1 text-body-sm text-on-surface-variant";
+  emailMessage("connect-message", "Opening a browser tab for Google's consent screen…");
   try {
     await postJSON("/api/email/authenticate", {});
-    connectMessage.textContent = "Connected.";
-    connectMessage.className = "mt-1 text-body-sm save-success";
+    emailMessage("connect-message", "Connected.", true);
     await loadGmailStatus();
   } catch (e) {
-    connectMessage.textContent = e.message || "Authentication failed.";
-    connectMessage.className = "mt-1 text-body-sm save-error";
+    emailMessage("connect-message", e.message || "Authentication failed.", false);
   } finally {
     connectBtn.disabled = false;
   }
 });
 
-async function loadTelegramStatus() {
-  const chip = document.getElementById("telegram-chip");
-  const note = document.getElementById("telegram-note");
+document.getElementById("report-to-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
   try {
-    const s = await getJSON("/api/status");
-    if (s.telegram_configured === undefined) {
-      chip.textContent = "Unknown";
-      note.textContent = "Restart the API to see whether a bot is configured.";
-    } else if (s.telegram_configured) {
-      setChip(chip, "Configured", true);
-      note.textContent = s.dry_run ? "Dry run is on, so reports are logged rather than sent." : "";
-    } else {
-      setChip(chip, "Not configured", false);
-      note.innerHTML = "Set <code>TELEGRAM_BOT_TOKEN</code> and <code>TELEGRAM_CHAT_ID</code> in <code>.env</code> to receive reports.";
-    }
-  } catch (e) {
-    chip.textContent = "Offline";
+    paintEmailStatus(await postJSON("/api/email/report-to", { address: document.getElementById("report-to").value }));
+  } catch (err) {
+    document.getElementById("reports-note").textContent = err.message || "Could not save.";
   }
-}
+});
 
 loadGmailStatus();
-loadTelegramStatus();

@@ -28,7 +28,7 @@ for you every day. Three rules shape how it behaves:
    complete draft and waits for your approval.
 
 Everything runs on free tools: local or free-tier AI models, public job-board
-APIs, your own Gmail, and a Telegram bot.
+APIs, and your own Gmail.
 
 ---
 
@@ -57,7 +57,7 @@ flowchart TB
 
     subgraph Report["4 · Report"]
         E["Email Agent<br/>(your Gmail)"]
-        TG["Telegram<br/>daily + weekly"]
+        TG["Report emails<br/>daily + weekly"]
         G["Skill-gap tracker"]
     end
 
@@ -79,7 +79,7 @@ A day in the life (all times are local, from `scheduler.py`):
 timeline
     title What runs automatically
     8 AM daily : Search every source : Rank, score, tailor : Auto-submit or draft
-    8 PM daily : Telegram summary of the day
+    8 PM daily : Email summary of the day
     Monday 9 AM : Weekly news digest for your field
     Any time : Search on the Search page runs the 8 AM pipeline on demand
 ```
@@ -273,8 +273,8 @@ from any static server). It talks to the FastAPI backend in `api.py`, and its de
 | **Applications** | Every application, filterable, with a detail panel: match affinity, the factors behind it, ATS evidence — and **Submit Application**, which sends the email from your Gmail |
 | **CV** | Master CV (view, download, replace), every tailored CV with its before → after ATS score, and the **ATS & tailoring bench**: paste a job description and see the score and rewrite without saving anything |
 | **Profile** | The extracted profile every agent reads, in sections that open one at a time; reorder them (tailored CVs follow the order) or add your own |
-| **Reports** | Headline numbers, a plain-language momentum summary, skill-gap bars, where roles come from, the latest news digest, and every dispatch (Telegram reports and application emails) |
-| **Settings** | AI provider and keys, autonomy mode, ATS and match thresholds, advanced matching, and notification channels (Telegram status, Gmail connection) |
+| **Reports** | Headline numbers, a plain-language momentum summary, skill-gap bars, where roles come from, the latest news digest, and every dispatch (report emails and application emails) |
+| **Settings** | AI provider and keys, autonomy mode, ATS and match thresholds, advanced matching, and notification channels (Gmail sign-in, where reports are emailed; Gmail connection) |
 
 Styling uses Tailwind, shipped **pre-compiled** as `frontend/tailwind.css`,
 and fonts are stored in the repo, so the dashboard needs no CDN and no build
@@ -364,6 +364,23 @@ first run instead, list their keys in `SEARCH_DEFAULT_BOARDS`.
 
 Any other careers page can be pasted too; it's read on a best-effort basis.
 
+### Connect Gmail (optional)
+
+Gmail sends the applications you approve, plus your daily report and weekly
+news. In **Settings → Notifications & Channels**, pick one:
+
+- **Sign in with Gmail.** Enter your address and a Google *App Password*.
+  Google doesn't let apps use your normal password, so: turn on 2-Step
+  Verification, open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords),
+  create one named "Sa'ei", and paste the 16 letters. It's checked with Gmail
+  before it's saved, and you can revoke it there any time.
+- **Connect with Google (OAuth).** Needs an OAuth client file from Google
+  Cloud Console at `credentials/gmail_credentials.json`; Connect then opens
+  Google's consent screen. More setup, and no password is stored.
+
+Reports go to your own address unless you set another under *Send reports to*.
+While `DRY_RUN=true`, nothing is sent; reports are only logged on the Reports page.
+
 ---
 
 ## Enabling auto-submit
@@ -403,7 +420,7 @@ flowchart LR
         CF --> API["api.py · 127.0.0.1:8000<br/>dashboard + API + schedule"]
         API --> DB[("SQLite")]
     end
-    API --> TG["Telegram"] & GM["Gmail"] & LLM["Gemini / Groq"]
+    API --> GM["Gmail"] & LLM["Gemini / Groq"]
 ```
 
 **What changes on a server** (all set by `deploy/gcp/startup-script.sh`):
@@ -485,7 +502,7 @@ python -m bench.report --calibrate  # re-derive semantic thresholds after changi
 | Embeddings | Ollama `nomic-embed-text` / `qwen3-embedding:4b` · Gemini `gemini-embedding-001` |
 | Job sources | Greenhouse & Lever APIs, RemoteOK, We Work Remotely, SerpAPI (optional), Google Sheets watchlist, scraped career pages |
 | Documents | `pdfplumber`, `python-docx`, `reportlab` |
-| Delivery | Gmail API (OAuth), Telegram Bot API |
+| Delivery | Gmail: App Password (SMTP) or Gmail API (OAuth) |
 | Storage / API | SQLite + SQLAlchemy, FastAPI |
 | Frontend | Static HTML/JS + pre-compiled Tailwind |
 

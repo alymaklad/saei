@@ -1,9 +1,9 @@
-"""Weekly news digest for the user's field, stored + sent via Telegram."""
+"""Weekly news digest for the user's field, stored + emailed to you."""
 import config
 from db import get_session, init_db
 from models import NewsDigest, ReportLog
 from agents.news_agent import fetch_news, summarize_news
-from agents.reporter_agent import send_telegram_report
+from agents.reporter_agent import send_report
 
 DEFAULT_FIELD = "software engineering"
 
@@ -18,7 +18,7 @@ def run_weekly_news_digest(field: str = DEFAULT_FIELD):
         session.add(NewsDigest(field=field, content=summary))
 
     try:
-        result = send_telegram_report(report_text)
+        result = send_report(f"Sa'ei weekly news: {field}", report_text)
         if result.get("dry_run"):
             status = "dry_run"
         elif "error" in result:

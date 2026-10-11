@@ -322,28 +322,78 @@
         <p class="text-body-sm text-on-surface-variant">Where reports go, and the account applications are sent from. No spam.</p>
       </div>
       <div class="flex flex-col gap-space-sm">
-        <div class="flex items-start gap-space-md rounded-lg bg-surface-container-lowest p-space-md shadow-soft">
-          <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">send</span></span>
-          <div class="flex-1">
-            <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Telegram Bot Integration <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="telegram-chip">&hellip;</span></p>
-            <p class="text-body-sm text-on-surface-variant">Daily application summary at 20:00 and the weekly news digest on Mondays at 9:00, sent by the scheduler.</p>
-            <p class="mt-1 text-body-sm text-on-surface-variant" id="telegram-note"></p>
+        <!-- Gmail: sends applications and the reports -->
+        <div class="rounded-lg bg-surface-container-lowest p-space-md shadow-soft">
+          <div class="flex items-start gap-space-md">
+            <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">mail</span></span>
+            <div class="flex-1">
+              <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Gmail <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="gmail-chip">&hellip;</span></p>
+              <p class="text-body-sm text-on-surface-variant">Sends the applications you approve and your reports, from your own Gmail. Nothing goes through a third party.</p>
+              <p class="mt-1 text-body-sm text-on-surface-variant" id="gmail-status">Checking&hellip;</p>
+            </div>
           </div>
-        </div>
-        <div class="flex items-start gap-space-md rounded-lg bg-surface-container-lowest p-space-md shadow-soft">
-          <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">mail</span></span>
-          <div class="flex-1">
-            <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Email Delivery <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="gmail-chip">&hellip;</span></p>
-            <p class="text-body-sm text-on-surface-variant">Applications you approve on the Applications page are sent from your own Gmail via OAuth — nothing goes through a third party.</p>
-            <p class="mt-1 text-body-sm text-on-surface-variant" id="gmail-status">Checking&hellip;</p>
+
+          <div class="mt-space-md flex gap-1 rounded-lg bg-surface-container-low p-1" role="tablist" aria-label="How to connect Gmail">
+            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="app_password">Sign in with Gmail</button>
+            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="oauth">Connect with Google (OAuth)</button>
+          </div>
+
+          <!-- App Password -->
+          <div class="mt-space-md" data-email-panel="app_password" hidden>
+            <form id="app-password-form" class="grid grid-cols-[1fr_1fr_auto] items-end gap-space-sm" autocomplete="off">
+              <div>
+                <label for="gmail-address" class="sa-label">Gmail address</label>
+                <input type="email" id="gmail-address" class="sa-input" placeholder="you@gmail.com" autocomplete="username">
+              </div>
+              <div>
+                <label for="gmail-app-password" class="sa-label">App Password</label>
+                <input type="password" id="gmail-app-password" class="sa-input" placeholder="16 letters, e.g. abcd efgh ijkl mnop" autocomplete="new-password">
+              </div>
+              <button type="submit" class="sa-btn-primary" id="app-password-btn"><span class="ms text-[18px]">login</span>Sign in</button>
+            </form>
+            <p class="mt-2 text-body-sm" id="app-password-message"></p>
+            <button type="button" class="mt-1 text-label-md text-on-surface-variant hover:text-error" id="app-password-forget" hidden>Forget the saved App Password</button>
+            <details class="mt-space-sm text-body-sm text-on-surface-variant">
+              <summary class="cursor-pointer list-none text-label-md hover:text-primary">How to get an App Password (1 minute) &darr;</summary>
+              <ol class="mt-2 list-decimal space-y-1 pl-5">
+                <li>Turn on 2-Step Verification for your Google account, if it isn't already.</li>
+                <li>Open <a class="text-primary hover:underline" href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>, type a name such as “Sa'ei” and press Create.</li>
+                <li>Copy the 16-letter password into the box above and press Sign in.</li>
+              </ol>
+              <p class="mt-2">Google doesn't let apps use your normal Gmail password, which is why this one is needed. It only works for this app, it's stored in your <code>.env</code> on this computer, and you can revoke it on the same Google page at any time.</p>
+            </details>
+          </div>
+
+          <!-- OAuth -->
+          <div class="mt-space-md" data-email-panel="oauth" hidden>
+            <div class="flex items-center gap-space-md">
+              <p class="flex-1 text-body-sm text-on-surface-variant" id="oauth-status"></p>
+              <button type="button" id="connect-btn" class="sa-btn sa-btn-sm"><span class="ms text-[16px]">link</span>Connect Gmail</button>
+            </div>
             <p class="mt-1 text-body-sm" id="connect-message"></p>
+            <details class="mt-space-sm text-body-sm text-on-surface-variant">
+              <summary class="cursor-pointer list-none text-label-md hover:text-primary">How the OAuth connection is set up &darr;</summary>
+              <p class="mt-2">Needs an OAuth client file at <code>credentials/gmail_credentials.json</code> (Google Cloud Console → OAuth client ID → Desktop app). Connect opens a browser tab where you sign in and grant access; the token is saved to <code>credentials/gmail_token.json</code>. Times out after 3 minutes if left unfinished. While the app's consent screen is in “Testing”, Google ends the sign-in after 7 days.</p>
+            </details>
           </div>
-          <button type="button" id="connect-btn" class="sa-btn sa-btn-sm"><span class="ms text-[16px]">link</span>Connect Gmail</button>
         </div>
-        <details class="group text-body-sm text-on-surface-variant">
-          <summary class="cursor-pointer list-none px-1 text-label-md text-on-surface-variant hover:text-primary">How the Gmail connection is set up &darr;</summary>
-          <p class="mt-2 px-1">Needs an OAuth client file at <code>credentials/gmail_credentials.json</code> (Google Cloud Console → OAuth client ID → Desktop app). Connect opens a browser tab where you sign in and grant access; the token is saved to <code>credentials/gmail_token.json</code>. Times out after 3 minutes if left unfinished.</p>
-        </details>
+
+        <!-- Reports -->
+        <div class="flex items-start gap-space-md rounded-lg bg-surface-container-lowest p-space-md shadow-soft">
+          <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">summarize</span></span>
+          <div class="flex-1">
+            <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Reports by email <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="reports-chip">&hellip;</span></p>
+            <p class="text-body-sm text-on-surface-variant">The day's applications at 20:00 and the news digest on Mondays at 9:00, emailed through the Gmail connection above.</p>
+            <form id="report-to-form" class="mt-space-sm flex items-end gap-space-sm">
+              <div class="flex-1">
+                <label for="report-to" class="sa-label">Send reports to</label>
+                <input type="email" id="report-to" class="sa-input" placeholder="Your Gmail address">
+              </div>
+              <button type="submit" class="sa-btn sa-btn-sm">Save</button>
+            </form>
+            <p class="mt-1 text-body-sm text-on-surface-variant" id="reports-note"></p>
+          </div>
+        </div>
       </div>
     </section>
 
