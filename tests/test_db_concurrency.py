@@ -35,6 +35,7 @@ def temp_engine():
 
     Base.metadata.create_all(engine)
     yield engine
+    engine.dispose()   # pooled connections hold the file open (Windows won't delete it)
     for suffix in ("", "-wal", "-shm"):
         candidate = path + suffix
         if os.path.exists(candidate):

@@ -394,40 +394,91 @@ document.getElementById("position-form").addEventListener("submit", async (e) =>
     searchBtn.disabled = false;
     return;
   }
-  paintRun("running");
-  searchMessage.innerHTML = `<span class="ms text-[16px]">info</span><span>Takes a few minutes — one model call per new job found.</span>`;
-  searchMessage.className = "mt-space-md flex items-start gap-2 text-body-sm text-on-surface-variant";
   try {
-    const result = await postJSON("/api/search/run", {});
-    const sourceErrors = result.source_errors || [];
-    const errors = result.errors || [];
-    const queued = result.queued || [];
-    const state = result.stopped ? "stopped"
-      : errors.length ? "failed" : queued.length || sourceErrors.length ? "partial" : "done";
-    const ready = result.processed.length;
-    const prepare = [`${ready} ready`];
-    if (queued.length) prepare.push(`${queued.length} saved for the next search`);
-    if (result.stopped && !queued.length) prepare.push("stopped before processing");
-    if (errors.length) prepare.push(`${errors.length} failed`);
-    paintRun(state, {
-      find: `${result.found} role${result.found === 1 ? "" : "s"} found${sourceErrors.length ? ` · ${sourceErrors.length} source(s) unreachable` : ""}`,
-      match: `${result.new_after_dedup ?? ready} new after deduplication`,
-      prepare: prepare.join(" · "),
-    });
-    if (state !== "done" || result.resumed) {
-      showRunNotes(result);
-    } else {
-      searchMessage.innerHTML = `<span class="ms text-[16px]">check</span><span>Finished. New roles are ranked below and on the Applications page.</span>`;
-    }
-    loadSnapshots();
+    await postJSON("/api/search/run", {});
+    await followRun();
   } catch (err) {
-    paintRun("failed", { prepare: "The search request failed" });
-    searchMessage.innerHTML = `<span class="ms text-[16px]">error</span><span>${escapeHtml(err.message || "Search failed.")}</span>`;
-    searchMessage.className = "mt-space-md flex items-start gap-2 text-body-sm text-error";
-  } finally {
+    showRunFailure(err.message || "Search failed.");
     searchBtn.disabled = false;
   }
 });
+
+function showRunning() {
+  searchBtn.disabled = true;
+  paintRun("running");
+  searchMessage.innerHTML = `<span class="ms text-[16px]">info</span><span>Takes a few minutes — one model call per new job found. You can leave this page; the search keeps going.</span>`;
+  searchMessage.className = "mt-space-md flex items-start gap-2 text-body-sm text-on-surface-variant";
+}
+
+function showRunFailure(message) {
+  paintRun("failed", { prepare: "The search request failed" });
+  searchMessage.innerHTML = `<span class="ms text-[16px]">error</span><span>${escapeHtml(message)}</span>`;
+  searchMessage.className = "mt-space-md flex items-start gap-2 text-body-sm text-error";
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// The run happens server-side (a single request would be cut off by any proxy
+// long before a search finishes); this polls until it's over, then paints the
+// outcome. Brief network blips are retried rather than reported as a failure.
+async function followRun() {
+  showRunning();
+  let misses = 0;
+  for (;;) {
+    await sleep(3000);
+    let status;
+    try {
+      status = await getJSON("/api/search/status");
+      misses = 0;
+    } catch (err) {
+      if (++misses >= 5) throw new Error("Lost contact with the backend while the search was running.");
+      continue;
+    }
+    if (status.running) continue;
+    searchBtn.disabled = false;
+    if (status.error) showRunFailure(status.error);
+    else if (status.result) showResult(status.result);
+    else paintRun("done", {});   // a scheduled run finished; it reports through Telegram
+    loadSnapshots();
+    return;
+  }
+}
+
+function showResult(result) {
+  const sourceErrors = result.source_errors || [];
+  const errors = result.errors || [];
+  const queued = result.queued || [];
+  const state = result.stopped ? "stopped"
+    : errors.length ? "failed" : queued.length || sourceErrors.length ? "partial" : "done";
+  const ready = result.processed.length;
+  const prepare = [`${ready} ready`];
+  if (queued.length) prepare.push(`${queued.length} saved for the next search`);
+  if (result.stopped && !queued.length) prepare.push("stopped before processing");
+  if (errors.length) prepare.push(`${errors.length} failed`);
+  paintRun(state, {
+    find: `${result.found} role${result.found === 1 ? "" : "s"} found${sourceErrors.length ? ` · ${sourceErrors.length} source(s) unreachable` : ""}`,
+    match: `${result.new_after_dedup ?? ready} new after deduplication`,
+    prepare: prepare.join(" · "),
+  });
+  if (state !== "done" || result.resumed) {
+    showRunNotes(result);
+  } else {
+    searchMessage.innerHTML = `<span class="ms text-[16px]">check</span><span>Finished. New roles are ranked below and on the Applications page.</span>`;
+  }
+}
+
+// Coming back to this page while a search is still going: show it and follow it.
+async function resumeRunningSearch() {
+  try {
+    const status = await getJSON("/api/search/status");
+    if (status.running) await followRun();
+  } catch (err) {
+    if (searchBtn.disabled) {
+      showRunFailure(err.message || "Search failed.");
+      searchBtn.disabled = false;
+    }
+  }
+}
 
 // ---- snapshots --------------------------------------------------------------------
 
@@ -476,3 +527,4 @@ loadPosition();
 loadSites();
 loadSnapshots();
 loadPending();
+resumeRunningSearch();

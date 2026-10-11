@@ -262,8 +262,8 @@ flowchart TD
 
 ## The dashboard
 
-`frontend/` is a static site: open `index.html` or serve the folder. It
-talks to the FastAPI backend in `api.py`, and its design comes from the
+`frontend/` is a static site, served by the API itself at `/` (or open it
+from any static server). It talks to the FastAPI backend in `api.py`, and its design comes from the
 **Sa'ei** project in Stitch.
 
 | Page | What it's for |
@@ -272,7 +272,7 @@ talks to the FastAPI backend in `api.py`, and its design comes from the
 | **Search** | Role, experience level and freshness; the job boards to scan (*Manage sources*); *Search* runs the pipeline now; the best recent matches |
 | **Applications** | Every application, filterable, with a detail panel: match affinity, the factors behind it, ATS evidence — and **Submit Application**, which sends the email from your Gmail |
 | **CV** | Master CV (view, download, replace), every tailored CV with its before → after ATS score, and the **ATS & tailoring bench**: paste a job description and see the score and rewrite without saving anything |
-| **Profile** | The extracted profile every agent reads, as six focused sections that open one at a time |
+| **Profile** | The extracted profile every agent reads, in sections that open one at a time; reorder them (tailored CVs follow the order) or add your own |
 | **Reports** | Headline numbers, a plain-language momentum summary, skill-gap bars, where roles come from, the latest news digest, and every dispatch (Telegram reports and application emails) |
 | **Settings** | AI provider and keys, autonomy mode, ATS and match thresholds, advanced matching, and notification channels (Telegram status, Gmail connection) |
 
@@ -333,7 +333,7 @@ Upload your CV on the **CV** page (or drop it at `cv/current_cv.pdf`).
 | Run the pipeline once | `python jobs/daily_run.py` |
 | Apply from one link | `python jobs/apply_from_link.py "https://boards.greenhouse.io/acme/jobs/123"` |
 | Always-on scheduler | `python scheduler.py` |
-| API + dashboard | `uvicorn api:app --port 8001` and `python -m http.server 5500 --directory frontend` |
+| API + dashboard | `uvicorn api:app --port 8001`, then open http://localhost:8001/ |
 
 Everything runs on your machine, so it stops when your machine sleeps. See
 [Deployment](#deployment) to keep it running unattended.
@@ -364,42 +364,56 @@ nothing).
 
 ## Deployment
 
-The frontend is static files, so any static host works (Cloudflare Pages,
-Netlify, Vercel, GitHub Pages). The backend needs a real, persistent Python
-process (SQLite, LangGraph, APScheduler), so serverless/WASM runtimes such as
-Cloudflare Workers can't run it.
+One small always-on server runs everything: the API, the dashboard (the API
+serves `frontend/` itself at `/`) and the daily schedule (inside the API
+process with `RUN_SCHEDULER_IN_API=true`). It's a real, persistent Python
+process (SQLite, LangGraph, APScheduler), so serverless runtimes such as
+Vercel functions or Cloudflare Workers can't run it.
 
 ```mermaid
 flowchart LR
-    B["Your browser"] --> CP["Static host<br/>(Cloudflare Pages)<br/>frontend/"]
-    B -->|"HTTPS · api.yourdomain.com"| CF["Cloudflare Tunnel"]
+    B["Your browser"] -->|"HTTPS · login"| CF["Cloudflare Tunnel"]
     subgraph VM["Always-free VM · GCP e2-micro"]
-        CF --> API["api.py<br/>(127.0.0.1:8000)"]
-        SCH["scheduler.py"]
-        API & SCH --> DB[("SQLite")]
+        CF --> API["api.py · 127.0.0.1:8000<br/>dashboard + API + schedule"]
+        API --> DB[("SQLite")]
     end
-    SCH --> TG["Telegram"] & GM["Gmail"]
+    API --> TG["Telegram"] & GM["Gmail"] & LLM["Gemini / Groq"]
 ```
 
-**Google Cloud, free tier:** scripts are in `deploy/gcp/`.
+**What changes on a server** (all set by `deploy/gcp/startup-script.sh`):
 
-1. Create an `e2-micro` VM in `us-west1`, `us-central1` or `us-east1` with
-   `--metadata-from-file=startup-script=deploy/gcp/startup-script.sh`. The
-   script installs everything and registers `job-agent-api` and
-   `job-agent-scheduler` as systemd services that restart on crash and start
-   on reboot. For a private repo, put a token in `REPO_URL` first.
-2. SSH in and fill `/opt/job-agent/.env`. Use `LLM_PROVIDER=gemini`, since
-   1 GB of RAM can't run Ollama. Copy `credentials/*.json` over with
-   `gcloud compute scp`, then
-   `sudo systemctl restart job-agent-api job-agent-scheduler`.
-3. Install `cloudflared`, create a tunnel, and fill in
-   `deploy/gcp/cloudflared/config.yml.example` as
-   `/etc/cloudflared/config.yml`. The API gets a public HTTPS URL without
-   opening any port.
-4. Set `API_BASE` in `frontend/config.js` to that URL and redeploy the
-   frontend.
+| Setting | Why |
+|---|---|
+| `APP_PASSWORD` | The dashboard asks for a login. Generated on first boot if blank. |
+| `RUN_SCHEDULER_IN_API=true` | One process instead of two on a 1 GB machine. |
+| `SCHEDULER_TIMEZONE=Africa/Cairo` | The VM clock is UTC. |
+| `LLM_PROVIDER`, `EMBEDDING_PROVIDER` → `gemini` if they were `ollama` | 1 GB of RAM can't run Ollama. Groq/OpenRouter are kept if you chose them. |
+| `GMAIL_INTERACTIVE_AUTH=false` | No browser on a server. Connect Gmail on your PC; the token is copied over. |
 
-To check that scheduled runs fire: `journalctl -u job-agent-scheduler -f`.
+**Google Cloud, free tier** (scripts in `deploy/gcp/`):
+
+1. Create the VM (Debian 12, the startup script installs and starts everything):
+   ```bash
+   gcloud compute instances create saei --zone=us-central1-a --machine-type=e2-micro --image-family=debian-12 --image-project=debian-cloud --boot-disk-size=30GB --boot-disk-type=pd-standard --metadata-from-file=startup-script=deploy/gcp/startup-script.sh
+   ```
+2. Copy your data and keys over (database, CV, tailored CVs, Gmail token, `.env`):
+   ```bash
+   powershell -ExecutionPolicy Bypass -File deploy\gcp\push-data.ps1 -IncludeEnv
+   ```
+   It prints the command that shows your dashboard login.
+3. Give it an HTTPS address: install `cloudflared` on the VM and fill in
+   `deploy/gcp/cloudflared/config.yml.example` (needs a domain on Cloudflare).
+   Without a domain, `cloudflared tunnel --url http://localhost:8000` gives a
+   temporary `trycloudflare.com` address for testing.
+4. Open the address and sign in.
+
+To update after pushing to GitHub: `gcloud compute instances reset saei --zone=us-central1-a`
+(the startup script pulls `main` on every boot). Logs:
+`gcloud compute ssh saei --zone=us-central1-a --command "journalctl -u job-agent-api -n 100"`.
+
+**Gmail on a server:** while the OAuth consent screen in Google Cloud is in
+*Testing*, Google expires the sign-in after 7 days and sending stops. Set it
+to *In production* (no review needed for your own account) so it lasts.
 
 ---
 
@@ -422,7 +436,7 @@ jobs/                   entry points: daily_run, daily_report, weekly_news, appl
 frontend/               the Sa'ei dashboard (7 pages + shell.js, ui.js, config.js)
 bench/                  labelled matching cases, precision/recall + calibration
 tests/                  pytest suite
-deploy/gcp/             VM startup script, systemd units, cloudflared config
+deploy/gcp/             VM startup script, systemd unit, data upload script, cloudflared config
 ARCHITECTURE.md         file-by-file technical deep-dive
 MATCHING.md             how a CV is matched against a job description
 SCORING.md              the ATS scoring pipeline, with a worked example
@@ -452,8 +466,9 @@ python -m bench.report --calibrate  # re-derive semantic thresholds after changi
 ## Cautions
 
 - **Respect each board's Terms of Service.** Use public APIs or sites that
-  allow access. LinkedIn and Indeed block automated requests and are
-  deliberately not supported.
+  allow access. Indeed blocks automated requests and is not supported;
+  LinkedIn is read only through its public, logged-out job search, paced by
+  `LINKEDIN_REQUEST_DELAY`.
 - **Rate-limit yourself.** Too many automated requests can get an IP or
   account flagged.
 - **Scale auto-submit slowly.** Start with drafts everywhere, then whitelist

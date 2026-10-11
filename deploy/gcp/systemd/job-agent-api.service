@@ -1,15 +1,19 @@
 [Unit]
-Description=Job Application Agent - dashboard API (FastAPI/uvicorn)
-After=network.target
+Description=Sa'ei - dashboard, API and daily schedule (FastAPI/uvicorn)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=job-agent
 WorkingDirectory=/opt/job-agent
-EnvironmentFile=/opt/job-agent/.env
+# No EnvironmentFile: config.py loads .env itself (python-dotenv), and systemd's
+# own parser mangles values containing quotes, e.g. EMBEDDING_QUERY_INSTRUCTION.
 # Bound to localhost only -- Cloudflare Tunnel reaches it from there.
 # No public port, no firewall rule needed, nothing exposed directly to the internet.
-ExecStart=/opt/job-agent/.venv/bin/uvicorn api:app --host 127.0.0.1 --port 8000
+# One worker: the schedule runs inside this process (RUN_SCHEDULER_IN_API), and
+# a second worker would run every scheduled job twice.
+ExecStart=/opt/job-agent/.venv/bin/uvicorn api:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers
 Restart=on-failure
 RestartSec=5
 

@@ -19,6 +19,7 @@ def temp_db_session():
     session = Session()
     yield session
     session.close()
+    engine.dispose()   # pooled connections hold the file open (Windows won't delete it)
     os.remove(path)
 
 

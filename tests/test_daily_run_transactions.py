@@ -44,6 +44,7 @@ def temp_db():
         yield engine
     finally:
         db.engine, db.SessionLocal = original_engine, original_session
+        engine.dispose()   # pooled connections hold the file open (Windows won't delete it)
         os.remove(path)
 
 

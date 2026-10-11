@@ -4,16 +4,24 @@ DB the agents write to (models.py/db.py); a few (settings, CV upload) let the
 frontend write configuration back to disk for a single local user.
 
 Run with: uvicorn api:app --reload --port 8001  (8001 locally; 8000 was taken by another project)
+The dashboard is served from the same address: http://localhost:8001/
 """
+import asyncio
+import base64
 import importlib
 import json
 import os
+import secrets
+import threading
 from collections import Counter
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -26,21 +34,77 @@ import profile_store
 from agents import email_agent
 from agents.search_agent import BUILTIN_FEEDS, parse_site_url, SENIORITY_LABELS
 from db import get_session, init_db
-from jobs.daily_run import pending_summary, request_stop, run_daily_search_and_apply
+from jobs.daily_run import is_running, pending_summary, request_stop, run_daily_search_and_apply
 from models import (
     Job, Application, SkillGap, NewsDigest, EmailLog, ReportLog, SearchSite,
     QueryExpansionCache, CvProfile,
 )
 
-app = FastAPI(title="Job Application Agent API")
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """With RUN_SCHEDULER_IN_API, the daily schedule runs in this process
+    alongside the API (see config.RUN_SCHEDULER_IN_API)."""
+    scheduler = None
+    if config.RUN_SCHEDULER_IN_API:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from scheduler import build_scheduler
+        scheduler = build_scheduler(BackgroundScheduler)
+        scheduler.start()
+    app.state.scheduler = scheduler
+    try:
+        yield
+    finally:
+        if scheduler:
+            scheduler.shutdown(wait=False)
 
-# Tighten allow_origins to your deployed frontend's exact origin before going live.
+
+app = FastAPI(title="Job Application Agent API", lifespan=_lifespan)
+
+# Only for a dashboard served from ANOTHER origin (the local port-5500 static
+# server). The dashboard this API serves itself is same-origin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.CORS_ALLOW_ORIGINS,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
+
+
+# ---- access control -----------------------------------------------------------
+#
+# HTTP Basic auth over the whole app -- API, dashboard and the CV files alike --
+# when APP_PASSWORD is set. Basic rather than a token because the browser
+# then sends it on everything by itself: fetch() calls, and also the plain
+# <a href> links that open a CV PDF, which a token header could never reach.
+# Only safe over HTTPS, which every hosting route in the README provides.
+# /api/health stays open so an uptime check doesn't need the password.
+
+def _credentials_match(header: str) -> bool:
+    if not header.lower().startswith("basic "):
+        return False
+    try:
+        user, _, password = base64.b64decode(header[6:]).decode("utf-8").partition(":")
+    except (ValueError, UnicodeDecodeError):
+        return False
+    # compare_digest on both, so a wrong username takes as long as a wrong password
+    user_ok = secrets.compare_digest(user.encode(), config.APP_USERNAME.encode())
+    password_ok = secrets.compare_digest(password.encode(), config.APP_PASSWORD.encode())
+    return user_ok and password_ok
+
+
+@app.middleware("http")
+async def require_login(request: Request, call_next):
+    if (not config.APP_PASSWORD or request.method == "OPTIONS"
+            or request.url.path == "/api/health"):
+        return await call_next(request)
+    header = request.headers.get("authorization", "")
+    if _credentials_match(header):
+        return await call_next(request)
+    if header:
+        await asyncio.sleep(1)   # a wrong guess costs a second: slows brute force
+    return Response("Sign in required.", status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="Sa\'ei", charset="UTF-8"'})
+
 
 init_db()
 
@@ -929,6 +993,8 @@ def email_authenticate():
         # Google's consent screen -- expected for a local tool. Bounded by
         # GMAIL_AUTH_TIMEOUT_SECONDS so an abandoned tab can't hang forever.
         email_agent.get_gmail_service()
+    except RuntimeError as exc:   # headless host: see config.GMAIL_INTERACTIVE_AUTH
+        raise HTTPException(400, str(exc))
     except google_auth_oauthlib.flow.WSGITimeoutError:
         raise HTTPException(
             408,
@@ -1321,19 +1387,63 @@ def stop_search():
     return {"stopping": request_stop()}
 
 
+# A run takes minutes (one or more LLM calls per new job). Held open as one
+# request it outlives any proxy in front of a hosted API -- Cloudflare drops a
+# request after 100 seconds -- so it runs in a thread and the page polls
+# /api/search/status. Also lets the page pick a run back up after you
+# navigate away and return.
+_search_lock = threading.Lock()
+_search_state = {"running": False, "started_at": None, "finished_at": None,
+                 "result": None, "error": None}
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _search_thread():
+    result, error = None, None
+    try:
+        result = run_daily_search_and_apply()
+    except RuntimeError as exc:
+        error = str(exc)   # e.g. no CV uploaded yet -- a setup problem, said plainly
+    except Exception as exc:  # noqa: BLE001 -- surface the real failure to the UI
+        error = f"Search run failed: {exc}"
+    with _search_lock:
+        _search_state.update(running=False, finished_at=_now_iso(),
+                             result=result, error=error)
+
+
 @app.post("/api/search/run")
 def run_search_now():
     """
-    Runs the same search-and-apply pipeline the scheduler fires at 8am, on
-    demand, using the currently saved position query and site list. Blocks
-    until it's done -- can take a while (one LLM call per new job found) --
-    which is why the frontend shows a "this may take a few minutes" message
-    rather than a spinner that implies it'll be instant.
+    Starts the same search-and-apply pipeline the scheduler fires at 8am, on
+    demand, using the currently saved position query and site list. Returns
+    at once; poll GET /api/search/status for the outcome.
     """
-    try:
-        return run_daily_search_and_apply()
-    except RuntimeError as exc:
-        # e.g. no CV uploaded yet -- a config problem, not a server error
-        raise HTTPException(400, str(exc))
-    except Exception as exc:  # noqa: BLE001 -- surface the real failure to the UI
-        raise HTTPException(500, f"Search run failed: {exc}")
+    with _search_lock:
+        if _search_state["running"] or is_running():
+            raise HTTPException(409, "A search is already running. Wait for it to "
+                                     "finish, or press Stop.")
+        _search_state.update(running=True, started_at=_now_iso(), finished_at=None,
+                             result=None, error=None)
+    threading.Thread(target=_search_thread, name="dashboard-search", daemon=True).start()
+    return search_status()
+
+
+@app.get("/api/search/status")
+def search_status():
+    """The dashboard-started run: whether it is still going, and once it has
+    finished, its result (or error). `running` is also true while a scheduled
+    run is going in this process."""
+    with _search_lock:
+        state = dict(_search_state)
+    state["running"] = state["running"] or is_running()
+    return state
+
+
+# The dashboard itself, at /. Mounted last: a mount at "/" would otherwise
+# shadow every route registered after it.
+FRONTEND_DIR = Path(__file__).resolve().parent / "frontend"
+if FRONTEND_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="dashboard")

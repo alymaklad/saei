@@ -1,6 +1,10 @@
 // Shared across every page -- include this <script> before any page-specific
-// script. Point API_BASE at wherever api.py is running (defaults to local).
-const API_BASE = window.JOB_AGENT_API_BASE || "http://localhost:8001";
+// script. The API serves this dashboard itself (http://localhost:8001/, or the
+// deployed address), so by default it's the page's own origin. Opened from the
+// local port-5500 static server or as a file, it points at the local API.
+// Set window.JOB_AGENT_API_BASE to host the dashboard somewhere else.
+const API_BASE = window.JOB_AGENT_API_BASE
+  ?? ((location.protocol === "file:" || location.port === "5500") ? "http://localhost:8001" : "");
 
 async function getJSON(path) {
   const res = await fetch(`${API_BASE}${path}`);

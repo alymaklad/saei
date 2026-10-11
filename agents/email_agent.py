@@ -59,6 +59,15 @@ def get_gmail_service():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+        elif not config.GMAIL_INTERACTIVE_AUTH:
+            # A server has no browser to open, so the consent flow below would
+            # just wait out its timeout (inside a scheduled run, with nobody
+            # watching). Say what to do instead.
+            raise RuntimeError(
+                "Gmail isn't signed in on this server, and it can't open a browser "
+                "to sign in. Click Connect Gmail on your own computer, then copy "
+                f"{config.GMAIL_TOKEN_JSON} to the server."
+            )
         else:
             flow = InstalledAppFlow.from_client_secrets_file(config.GMAIL_CREDENTIALS_JSON, SCOPES)
             creds = flow.run_local_server(

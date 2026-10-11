@@ -28,6 +28,12 @@ cv/current_cv.*
 # is derived from personal CV content -- both are local diagnostics, not source.
 data/search_reports/
 data/cv_embedding_cache.json
+# Also derived from the CV / profile (personal data), and local backups of the DB.
+data/cv_profile_cache.json
+data/span_embedding_cache.json
+data/soft_skills_cache.json
+data/*.backup-*
+data/*.wiped-rows-*
 !data/.gitkeep
 !credentials/.gitkeep
 !cv_output/.gitkeep

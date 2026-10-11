@@ -45,6 +45,7 @@ def old_schema_db():
         yield engine
     finally:
         db.engine = original_engine
+        engine.dispose()   # pooled connections hold the file open (Windows won't delete it)
         os.remove(path)
 
 
@@ -91,4 +92,5 @@ def test_migrate_schema_noop_on_a_fresh_database():
         db._migrate_schema()  # should be a clean no-op
     finally:
         db.engine = original_engine
+        engine.dispose()   # pooled connections hold the file open (Windows won't delete it)
         os.remove(path)

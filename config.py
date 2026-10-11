@@ -787,3 +787,36 @@ DRY_RUN = _bool("DRY_RUN", True)
 
 # Storage
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/job_agent.db")
+
+# ── Hosting ────────────────────────────────────────────────────────
+# Everything below matters only once the app runs somewhere other than your
+# own machine; the defaults keep a local install exactly as it was.
+
+# Access control. Unset = no login (a local install only you can reach). Set
+# it on ANY host reachable from the internet: the API holds your CV and
+# profile, your API keys, and the right to send email from your Gmail.
+APP_USERNAME = os.getenv("APP_USERNAME", "saei").strip() or "saei"
+APP_PASSWORD = os.getenv("APP_PASSWORD", "")
+
+# Origins allowed to call the API from another site. The dashboard served by
+# the API itself (http://host/) is same-origin and needs nothing here; the
+# default covers the local `python -m http.server 5500` setup.
+CORS_ALLOW_ORIGINS = _list("CORS_ALLOW_ORIGINS") or [
+    "http://localhost:5500", "http://127.0.0.1:5500",
+]
+
+# Gmail's first sign-in opens a browser on the machine running the API. On a
+# headless server there is no browser: sign in locally, then copy
+# credentials/gmail_token.json over. false = fail with that instruction
+# instead of waiting on a browser that will never open.
+GMAIL_INTERACTIVE_AUTH = _bool("GMAIL_INTERACTIVE_AUTH", True)
+
+# Timezone for the 08:00 search / 20:00 report / Monday news schedule, e.g.
+# "Africa/Cairo". Blank = the host's own clock, which on a cloud VM is UTC.
+SCHEDULER_TIMEZONE = os.getenv("SCHEDULER_TIMEZONE", "").strip()
+
+# true = the API process also runs the daily schedule, so one service does
+# everything: half the memory on a small VM, and the dashboard's Stop button
+# and "search already running" check also cover the scheduled 08:00 run.
+# Don't also run scheduler.py when this is on.
+RUN_SCHEDULER_IN_API = _bool("RUN_SCHEDULER_IN_API", False)
