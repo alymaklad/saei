@@ -287,7 +287,29 @@ def parse_site_url(url: str) -> tuple[str, str | None]:
     match = SMARTRECRUITERS_URL_RE.search(url)
     if match:
         return "smartrecruiters", match.group(1)
+    # A known job board (Wuzzuf, Bayt, ...) pasted by hand gets the same
+    # per-search URL the seeded row would, not a generic scrape of whatever
+    # page was pasted.
+    template = board_template_for(url)
+    if template:
+        return template, None
     return "generic", None
+
+
+def _registered_domain(url: str) -> str:
+    """"egypt.tanqeeb.com" -> "tanqeeb.com". Two labels is enough for every
+    board in KNOWN_JOB_BOARD_TEMPLATES; none sits under a two-part TLD."""
+    host = urlparse(url if "://" in url else f"https://{url}").netloc.lower().split(":")[0]
+    return ".".join(host.split(".")[-2:])
+
+
+def board_template_for(url: str) -> str | None:
+    """The KNOWN_JOB_BOARD_TEMPLATES key whose site this URL is on, if any."""
+    domain = _registered_domain(url)
+    for key, meta in KNOWN_JOB_BOARD_TEMPLATES.items():
+        if domain and _registered_domain(meta["default_url"]) == domain:
+            return key
+    return None
 
 
 def search_greenhouse(board_token: str) -> list[dict]:
@@ -942,7 +964,10 @@ def seed_default_search_sites() -> None:
     """
     import config
     already_seeded = config.SEARCH_DEFAULT_SITES_SEEDED
-    to_seed = [key for key in KNOWN_JOB_BOARD_TEMPLATES if key not in already_seeded]
+    # Only the boards meant for everyone (config.SEARCH_DEFAULT_BOARDS); a
+    # regional board is added when someone asks for it.
+    to_seed = [key for key in KNOWN_JOB_BOARD_TEMPLATES
+               if key not in already_seeded and key in config.SEARCH_DEFAULT_BOARDS]
     if not to_seed:
         return
 

@@ -291,6 +291,12 @@ The dashboard is desktop-only (minimum width 1100px).
 
 ## Getting started
 
+**Quickest:** on macOS or Linux run `./run.sh`; on Windows double-click
+`run.bat`. On first run, either one sets everything up (virtual environment,
+packages, `.env`) and then opens the dashboard at http://localhost:8001/.
+You need Python 3.10+ (3.11+ recommended) and one language model (step 2).
+The steps below are the same thing done by hand.
+
 ### 1. Install
 
 ```bash
@@ -330,6 +336,7 @@ Upload your CV on the **CV** page (or drop it at `cv/current_cv.pdf`).
 | | Command |
 |---|---|
 | **Windows, one click** | `run.bat` (venv) or `run_conda_quick.bat` (conda). Starts the API and scheduler and opens the dashboard. |
+| **macOS / Linux** | `./run.sh`. Starts the dashboard, API and schedule in one process and opens the browser. |
 | Run the pipeline once | `python jobs/daily_run.py` |
 | Apply from one link | `python jobs/apply_from_link.py "https://boards.greenhouse.io/acme/jobs/123"` |
 | Always-on scheduler | `python scheduler.py` |
@@ -337,6 +344,23 @@ Upload your CV on the **CV** page (or drop it at `cv/current_cv.pdf`).
 
 Everything runs on your machine, so it stops when your machine sleeps. See
 [Deployment](#deployment) to keep it running unattended.
+
+### Job boards for your region
+
+A new install searches the worldwide sources: remote-job feeds, Greenhouse,
+Lever, Wellfound and SimplyHired. Regional boards with their own search
+support are added when you want them. Paste the board's address under
+**Search → Manage sources**, or list their keys in `SEARCH_DEFAULT_BOARDS`
+before the first run:
+
+| Key | Board | Covers |
+|---|---|---|
+| `wuzzuf` | wuzzuf.net | Egypt |
+| `tanqeeb` | egypt.tanqeeb.com | Egypt |
+| `bayt` | bayt.com | Gulf / MENA |
+| `gulftalent` | gulftalent.com | Gulf |
+
+Any other careers page can be pasted too; it's read on a best-effort basis.
 
 ---
 
@@ -475,3 +499,9 @@ python -m bench.report --calibrate  # re-derive semantic thresholds after changi
   one board at a time.
 - **Scores from before 2026-08-26 aren't comparable.** They came from the
   retired four-pillar engine. Recalibrate `FIT_THRESHOLD` from real runs.
+
+## License
+
+[MIT](LICENSE). Use it, learn from it, change it. It's provided as-is: you're
+responsible for what it sends in your name and for following each job
+board's terms.

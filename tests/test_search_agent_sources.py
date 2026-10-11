@@ -179,6 +179,27 @@ def test_new_template_gets_seeded_when_legacy_flag_already_true():
     assert set(to_seed) == {"simplyhired", "wellfound", "gulftalent", "tanqeeb"}
 
 
+def test_a_fresh_install_seeds_only_the_worldwide_boards(monkeypatch):
+    """Regional boards (Egypt, the Gulf) wait until someone adds them."""
+    monkeypatch.delenv("SEARCH_DEFAULT_BOARDS", raising=False)
+    import importlib
+    import config as cfg
+    importlib.reload(cfg)
+    try:
+        assert cfg.SEARCH_DEFAULT_BOARDS == {"wellfound", "simplyhired"}
+        assert cfg.SEARCH_DEFAULT_BOARDS <= set(search_agent.KNOWN_JOB_BOARD_TEMPLATES)
+    finally:
+        importlib.reload(cfg)
+
+
+def test_a_pasted_regional_board_gets_its_template():
+    assert search_agent.parse_site_url("https://wuzzuf.net/search/jobs/?q=ai") == ("wuzzuf", None)
+    assert search_agent.parse_site_url("https://www.bayt.com/en/egypt/jobs/") == ("bayt", None)
+    assert search_agent.parse_site_url("https://egypt.tanqeeb.com/") == ("tanqeeb", None)
+    assert search_agent.parse_site_url("https://www.gulftalent.com/") == ("gulftalent", None)
+    assert search_agent.parse_site_url("https://careers.example.com/jobs") == ("generic", None)
+
+
 # ---- keyless remote APIs, ATS boards, LinkedIn --------------------------------
 
 def test_tanqeeb_build_url_filters_by_position():
