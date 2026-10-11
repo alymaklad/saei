@@ -585,7 +585,7 @@ function paintEmailStatus(s) {
   emailStatus = s;
   const chip = document.getElementById("gmail-chip");
   const statusEl = document.getElementById("gmail-status");
-  const how = s.method === "app_password" ? "signed in with an App Password" : "connected with Google (OAuth)";
+  const how = s.method === "app_password" ? "with an App Password" : "with Google sign-in";
   if (s.authenticated) {
     setChip(chip, "Connected", true);
     statusEl.textContent = `Sending as ${s.address || "your Gmail account"} — ${how}.`;
@@ -593,7 +593,12 @@ function paintEmailStatus(s) {
     setChip(chip, "Not connected", false);
     statusEl.textContent = "Not connected yet — choose a way below.";
   }
-  if (!shownMethod) showEmailMethod(s.method);
+  // Show the way in use; with nothing connected yet, Google sign-in when
+  // this copy of Sa'ei has it set up, else the App Password form.
+  if (!shownMethod) {
+    showEmailMethod(s.authenticated || s.app_password_saved ? s.method
+      : s.credentials_configured ? "oauth" : "app_password");
+  }
 
   const address = document.getElementById("gmail-address");
   if (!address.value && s.method === "app_password") address.value = s.address || "";
@@ -602,10 +607,12 @@ function paintEmailStatus(s) {
   document.getElementById("app-password-forget").hidden = !s.app_password_saved;
 
   const oauth = document.getElementById("oauth-status");
-  oauth.textContent = s.oauth_authenticated ? "Connected through OAuth."
-    : s.credentials_configured ? "Not connected yet." : "Not set up — no OAuth client file found yet (see below).";
-  connectBtn.innerHTML = s.oauth_authenticated
-    ? `<span class="ms text-[16px]">sync</span>Reconnect` : `<span class="ms text-[16px]">link</span>Connect Gmail`;
+  oauth.textContent = s.oauth_authenticated
+    ? `Signed in${s.method === "oauth" && s.address ? ` as ${s.address}` : ""}.`
+    : s.credentials_configured ? "" : "Google sign-in isn't set up in this copy of Sa'ei yet. Use an App Password instead.";
+  connectBtn.disabled = !s.credentials_configured;
+  document.getElementById("connect-label").textContent = s.oauth_authenticated
+    ? "Sign in with a different account" : "Sign in with Google";
 
   const reportsChip = document.getElementById("reports-chip");
   const note = document.getElementById("reports-note");
@@ -680,15 +687,15 @@ document.getElementById("app-password-forget").addEventListener("click", async (
 
 connectBtn.addEventListener("click", async () => {
   connectBtn.disabled = true;
-  emailMessage("connect-message", "Opening a browser tab for Google's consent screen…");
+  emailMessage("connect-message", "Google's sign-in opened in a new tab — finish there, then come back.");
   try {
     await postJSON("/api/email/authenticate", {});
-    emailMessage("connect-message", "Connected.", true);
+    emailMessage("connect-message", "Signed in.", true);
     await loadGmailStatus();
   } catch (e) {
     emailMessage("connect-message", e.message || "Authentication failed.", false);
   } finally {
-    connectBtn.disabled = false;
+    connectBtn.disabled = !emailStatus?.credentials_configured;
   }
 });
 

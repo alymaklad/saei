@@ -7,13 +7,16 @@ Two ways to connect, chosen on the Settings page (config.EMAIL_METHOD):
                 SMTP server. The simple route: no Google Cloud project.
                 Google refuses an account's normal password from apps, so
                 it has to be an App Password (needs 2-Step Verification).
-  oauth         The Gmail API, through an OAuth client file from Google
-                Cloud Console and a one-time consent screen in the browser.
+  oauth         "Sign in with Google": Google's account chooser and consent
+                screen in the browser, then the Gmail API. Uses Sa'ei's
+                shared Google app (google_oauth_client.json), so a user sets
+                up nothing -- or a client file of their own if they add one.
 
 Everything else -- applications, the daily report, the weekly news -- goes
 through _send() and doesn't care which one is in use.
 """
 import base64
+import json
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -23,12 +26,61 @@ from email.mime.application import MIMEApplication
 
 import config
 
+# What sending needs. A saved token is always loaded with just this, so a
+# token from before the sign-in scopes below were added keeps refreshing.
 SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+# Asked for at sign-in: sending, plus which account was picked -- so Settings
+# can say "Sending as you@gmail.com" without asking for more access.
+SIGN_IN_SCOPES = SCOPES + ["openid", "https://www.googleapis.com/auth/userinfo.email"]
+
+
+def _read_client_file(path: str) -> dict | None:
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return None
+    section = data.get("installed") or data.get("web") or {}
+    if not (section.get("client_id") and section.get("client_secret")):
+        return None   # the shipped placeholder, before the app is created
+    return {"installed" if "installed" in data else "web": section}
+
+
+def oauth_client() -> tuple[dict | None, str | None]:
+    """(client config, where it came from): your own file first, then Sa'ei's
+    shared app, else (None, None) and only the App Password route is offered."""
+    own = _read_client_file(config.GMAIL_CREDENTIALS_JSON)
+    if own:
+        return own, "own"
+    bundled = _read_client_file(config.SAEI_OAUTH_CLIENT_JSON)
+    if bundled:
+        return bundled, "bundled"
+    return None, None
 
 
 def credentials_configured() -> bool:
-    """Whether a Gmail OAuth client file has been downloaded and placed at GMAIL_CREDENTIALS_JSON."""
-    return os.path.exists(config.GMAIL_CREDENTIALS_JSON)
+    """Whether "Sign in with Google" can run on this install."""
+    return oauth_client()[0] is not None
+
+
+def _email_from_id_token(id_token: str | None) -> str:
+    """The signed-in account's address, read from the ID token Google just
+    returned over TLS to this process (so its signature isn't re-checked)."""
+    try:
+        payload = id_token.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        return json.loads(base64.urlsafe_b64decode(payload)).get("email", "")
+    except (AttributeError, IndexError, ValueError):
+        return ""
+
+
+def oauth_account_email() -> str:
+    """The Google account "Sign in with Google" used, saved next to its token."""
+    try:
+        with open(config.GMAIL_TOKEN_JSON, encoding="utf-8") as f:
+            return json.load(f).get("account_email", "")
+    except (OSError, ValueError):
+        return ""
 
 
 METHODS = ("app_password", "oauth")
@@ -53,7 +105,7 @@ def is_authenticated() -> bool:
 def sender_address() -> str:
     if method() == "app_password":
         return config.GMAIL_ADDRESS
-    return config.APPLICANT_EMAIL
+    return oauth_account_email() or config.APPLICANT_EMAIL
 
 
 def report_recipient() -> str:
@@ -100,9 +152,10 @@ GMAIL_AUTH_TIMEOUT_SECONDS = 180  # give up if the user never completes the brow
 
 def get_gmail_service():
     """
-    First run opens a new browser tab for OAuth consent (needs GMAIL_CREDENTIALS_JSON,
-    downloaded free from Google Cloud Console -> OAuth client, Desktop app type).
-    Token is cached to GMAIL_TOKEN_JSON afterward — no repeated login.
+    First run opens Google's "Sign in with Google" account chooser in a new
+    browser tab (through Sa'ei's shared app, or your own client file -- see
+    oauth_client()). The token is cached to GMAIL_TOKEN_JSON afterward, so
+    there's no repeated login.
 
     This blocks the calling thread until the user finishes (or abandons) the
     browser flow -- api.py's /api/email/authenticate runs it in FastAPI's
@@ -118,6 +171,7 @@ def get_gmail_service():
     if os.path.exists(config.GMAIL_TOKEN_JSON):
         creds = Credentials.from_authorized_user_file(config.GMAIL_TOKEN_JSON, SCOPES)
     if not creds or not creds.valid:
+        account_email = oauth_account_email()   # a refresh keeps who it was
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         elif not config.GMAIL_INTERACTIVE_AUTH:
@@ -126,24 +180,34 @@ def get_gmail_service():
             # watching). Say what to do instead.
             raise RuntimeError(
                 "Gmail isn't signed in on this server, and it can't open a browser "
-                "to sign in. Click Connect Gmail on your own computer, then copy "
+                "to sign in. Click Sign in with Google on your own computer, then copy "
                 f"{config.GMAIL_TOKEN_JSON} to the server."
             )
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(config.GMAIL_CREDENTIALS_JSON, SCOPES)
+            client, _source = oauth_client()
+            if client is None:
+                raise RuntimeError(
+                    "Sign in with Google isn't set up in this copy of Sa'ei. Use an App "
+                    "Password instead, or add an OAuth client file at "
+                    f"{config.GMAIL_CREDENTIALS_JSON}.")
+            flow = InstalledAppFlow.from_client_config(client, SIGN_IN_SCOPES)
             creds = flow.run_local_server(
                 port=0,
                 open_browser=True,  # explicit rather than relying on the library default
                 timeout_seconds=GMAIL_AUTH_TIMEOUT_SECONDS,
                 authorization_prompt_message="",  # nothing to print to a console the user isn't watching
                 success_message=(
-                    "Signed in. You can close this tab and return to the "
-                    "Job Application Agent dashboard."
+                    "Signed in to Sa'ei. You can close this tab and go back to "
+                    "the dashboard."
                 ),
             )
+            account_email = _email_from_id_token(getattr(creds, "id_token", None))
         os.makedirs(os.path.dirname(config.GMAIL_TOKEN_JSON) or ".", exist_ok=True)
+        token = json.loads(creds.to_json())
+        if account_email:
+            token["account_email"] = account_email
         with open(config.GMAIL_TOKEN_JSON, "w") as f:
-            f.write(creds.to_json())
+            json.dump(token, f)
     return build("gmail", "v1", credentials=creds)
 
 

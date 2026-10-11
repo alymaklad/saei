@@ -328,14 +328,14 @@
             <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">mail</span></span>
             <div class="flex-1">
               <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Gmail <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="gmail-chip">&hellip;</span></p>
-              <p class="text-body-sm text-on-surface-variant">Sends the applications you approve and your reports, from your own Gmail. Nothing goes through a third party.</p>
+              <p class="text-body-sm text-on-surface-variant">Sends the applications you approve and your reports, from your own Gmail. Nothing goes through a third party. Choose one way to connect:</p>
               <p class="mt-1 text-body-sm text-on-surface-variant" id="gmail-status">Checking&hellip;</p>
             </div>
           </div>
 
           <div class="mt-space-md flex gap-1 rounded-lg bg-surface-container-low p-1" role="tablist" aria-label="How to connect Gmail">
-            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="app_password">Sign in with Gmail</button>
-            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="oauth">Connect with Google (OAuth)</button>
+            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="oauth">Sign in with Google</button>
+            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="app_password">Use an App Password</button>
           </div>
 
           <!-- App Password -->
@@ -364,19 +364,18 @@
             </details>
           </div>
 
-          <!-- OAuth -->
+          <!-- OAuth: Google's own account chooser -->
           <div class="mt-space-md" data-email-panel="oauth" hidden>
             <div class="flex items-center gap-space-md">
+              <button type="button" id="connect-btn"
+                      class="inline-flex items-center gap-3 rounded-full border border-outline-variant bg-white px-4 py-2 text-[14px] font-medium text-[#1f1f1f] shadow-xs transition-colors hover:bg-[#f8f9fa] disabled:opacity-50">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span id="connect-label">Sign in with Google</span>
+              </button>
               <p class="flex-1 text-body-sm text-on-surface-variant" id="oauth-status"></p>
-              <button type="button" id="connect-btn" class="sa-btn sa-btn-sm"><span class="ms text-[16px]">link</span>Connect Gmail</button>
             </div>
             <p class="mt-1 text-body-sm" id="connect-message"></p>
-            <details class="mt-space-sm text-body-sm text-on-surface-variant">
-              <summary class="cursor-pointer list-none text-label-md hover:text-primary">How the OAuth connection is set up &darr;</summary>
-              <p class="mt-2">Needs an OAuth client file at <code>credentials/gmail_credentials.json</code> (Google Cloud Console → OAuth client ID → Desktop app). Connect opens a browser tab where you sign in and grant access; the token is saved to <code>credentials/gmail_token.json</code>. Times out after 3 minutes if left unfinished. While the app's consent screen is in “Testing”, Google ends the sign-in after 7 days.</p>
-            </details>
+            <p class="mt-space-sm text-body-sm text-on-surface-variant">Opens Google's sign-in in a new tab: pick your account, then allow Sa'ei to send email as you. Sa'ei can only send — it can't read your inbox.</p>
           </div>
-        </div>
 
         <!-- Reports -->
         <div class="flex items-start gap-space-md rounded-lg bg-surface-container-lowest p-space-md shadow-soft">

@@ -137,3 +137,54 @@ def test_report_recipient_can_be_changed_and_reset(client):
     assert tc.post("/api/email/report-to", json={"address": "other@x.com"}).json()["report_to"] == "other@x.com"
     assert tc.post("/api/email/report-to", json={"address": ""}).json()["report_to"] == "me@gmail.com"
     assert tc.post("/api/email/report-to", json={"address": "not-an-email"}).status_code == 400
+
+
+# ---- Sign in with Google: the shared app ---------------------------------------------
+
+def _client_file(path, client_id="id-123.apps.googleusercontent.com", secret="s3cret"):
+    import json
+    path.write_text(json.dumps({"installed": {
+        "client_id": client_id, "client_secret": secret,
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token"}}))
+    return str(path)
+
+
+def test_the_shared_app_is_used_unless_you_bring_your_own(gmail, tmp_path, monkeypatch):
+    config, email_agent = gmail
+    monkeypatch.setattr(config, "GMAIL_CREDENTIALS_JSON", str(tmp_path / "missing.json"))
+    monkeypatch.setattr(config, "SAEI_OAUTH_CLIENT_JSON", _client_file(tmp_path / "shared.json", "shared-id"))
+    client, source = email_agent.oauth_client()
+    assert source == "bundled" and client["installed"]["client_id"] == "shared-id"
+
+    monkeypatch.setattr(config, "GMAIL_CREDENTIALS_JSON", _client_file(tmp_path / "own.json", "own-id"))
+    client, source = email_agent.oauth_client()
+    assert source == "own" and client["installed"]["client_id"] == "own-id"
+
+
+def test_the_shipped_placeholder_means_google_sign_in_is_off(gmail, tmp_path, monkeypatch):
+    config, email_agent = gmail
+    import pathlib
+    shipped = pathlib.Path(__file__).resolve().parent.parent / "google_oauth_client.json"
+    monkeypatch.setattr(config, "GMAIL_CREDENTIALS_JSON", str(tmp_path / "missing.json"))
+    monkeypatch.setattr(config, "SAEI_OAUTH_CLIENT_JSON", _client_file(tmp_path / "blank.json", "", ""))
+    assert email_agent.oauth_client() == (None, None) and not email_agent.credentials_configured()
+    assert shipped.exists()   # the file the real app reads ships with the code
+
+
+def test_the_signed_in_account_is_read_from_googles_id_token(gmail):
+    import base64, json
+    _, email_agent = gmail
+    payload = base64.urlsafe_b64encode(json.dumps({"email": "me@gmail.com"}).encode()).decode().rstrip("=")
+    assert email_agent._email_from_id_token(f"header.{payload}.signature") == "me@gmail.com"
+    assert email_agent._email_from_id_token(None) == ""
+    assert email_agent._email_from_id_token("garbage") == ""
+
+
+def test_sender_address_comes_from_the_saved_token(gmail, tmp_path, monkeypatch):
+    import json
+    config, email_agent = gmail
+    token = tmp_path / "token.json"
+    token.write_text(json.dumps({"token": "t", "account_email": "me@gmail.com"}))
+    monkeypatch.setattr(config, "GMAIL_TOKEN_JSON", str(token))
+    assert email_agent.method() == "oauth" and email_agent.sender_address() == "me@gmail.com"

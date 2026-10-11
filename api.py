@@ -992,6 +992,7 @@ def email_status():
         "address": email_agent.sender_address(),
         "app_password_saved": bool(config.GMAIL_APP_PASSWORD),
         "credentials_configured": email_agent.credentials_configured(),
+        "oauth_client": email_agent.oauth_client()[1],   # "bundled", "own" or None
         "oauth_authenticated": email_agent.oauth_authenticated(),
         "report_to": email_agent.report_recipient(),
         "report_to_custom": bool(config.REPORT_EMAIL_TO),
@@ -1059,9 +1060,9 @@ def email_authenticate():
     if not email_agent.credentials_configured():
         raise HTTPException(
             400,
-            f"No Gmail OAuth client file at {config.GMAIL_CREDENTIALS_JSON}. "
-            "Download one from Google Cloud Console (OAuth client ID, Desktop app "
-            "type) first, then try again.",
+            "Sign in with Google isn't set up in this copy of Sa'ei. Use an App "
+            "Password instead, or add an OAuth client file at "
+            f"{config.GMAIL_CREDENTIALS_JSON}.",
         )
     try:
         # Blocks this request until the new browser tab it opens completes

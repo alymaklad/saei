@@ -369,14 +369,15 @@ Any other careers page can be pasted too; it's read on a best-effort basis.
 Gmail sends the applications you approve, plus your daily report and weekly
 news. In **Settings → Notifications & Channels**, pick one:
 
-- **Sign in with Gmail.** Enter your address and a Google *App Password*.
+- **Sign in with Google.** Google's own account chooser opens in a new tab:
+  pick your account and allow Sa'ei to send email. Sa'ei can only send, not
+  read your inbox. (Available once this copy has Sa'ei's Google app set up;
+  see [docs/google-sign-in.md](docs/google-sign-in.md).)
+- **Use an App Password.** Enter your address and a Google *App Password*.
   Google doesn't let apps use your normal password, so: turn on 2-Step
   Verification, open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords),
   create one named "Sa'ei", and paste the 16 letters. It's checked with Gmail
   before it's saved, and you can revoke it there any time.
-- **Connect with Google (OAuth).** Needs an OAuth client file from Google
-  Cloud Console at `credentials/gmail_credentials.json`; Connect then opens
-  Google's consent screen. More setup, and no password is stored.
 
 Reports go to your own address unless you set another under *Send reports to*.
 While `DRY_RUN=true`, nothing is sent; reports are only logged on the Reports page.

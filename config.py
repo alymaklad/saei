@@ -225,14 +225,19 @@ GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "credenti
 #   app_password = your Gmail address + a Google App Password
 #                  (myaccount.google.com/apppasswords, needs 2-Step
 #                  Verification). Nothing to set up in Google Cloud.
-#   oauth        = "Connect with Google" through an OAuth client file you
-#                  create in Google Cloud Console (GMAIL_CREDENTIALS_JSON).
+#   oauth        = "Sign in with Google": Google's own account chooser,
+#                  through Sa'ei's shared app (SAEI_OAUTH_CLIENT_JSON) or a
+#                  client file of your own (GMAIL_CREDENTIALS_JSON).
 # Blank = app_password once one is saved, otherwise oauth.
 EMAIL_METHOD = os.getenv("EMAIL_METHOD", "").strip().lower()
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "").strip()
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "")
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = _int("SMTP_PORT", 465)
+# Sa'ei's shared Google sign-in app, shipped with the code -- what makes
+# "Sign in with Google" work with no Google Cloud setup. A client file of
+# your own at GMAIL_CREDENTIALS_JSON takes precedence over it.
+SAEI_OAUTH_CLIENT_JSON = os.getenv("SAEI_OAUTH_CLIENT_JSON", "google_oauth_client.json")
 GMAIL_CREDENTIALS_JSON = os.getenv("GMAIL_CREDENTIALS_JSON", "credentials/gmail_credentials.json")
 GMAIL_TOKEN_JSON = os.getenv("GMAIL_TOKEN_JSON", "credentials/gmail_token.json")
 APPLICANT_NAME = os.getenv("APPLICANT_NAME", "")
