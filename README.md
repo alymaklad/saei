@@ -347,14 +347,16 @@ Everything runs on your machine, so it stops when your machine sleeps. See
 
 ### Job boards for your region
 
-A new install searches the worldwide sources: remote-job feeds, Greenhouse,
-Lever, Wellfound and SimplyHired. Regional boards with their own search
-support are added when you want them. Paste the board's address under
-**Search → Manage sources**, or list their keys in `SEARCH_DEFAULT_BOARDS`
-before the first run:
+A new install searches the remote-job feeds and the Greenhouse/Lever boards
+in `.env`. The job boards below are listed under **Search → Manage
+sources**, dimmed, each with an **Add** button; nothing is searched until
+you add it, and a removed board goes back to the list. To have some added on
+first run instead, list their keys in `SEARCH_DEFAULT_BOARDS`.
 
 | Key | Board | Covers |
 |---|---|---|
+| `wellfound` | wellfound.com | Startups, worldwide |
+| `simplyhired` | simplyhired.com | Worldwide |
 | `wuzzuf` | wuzzuf.net | Egypt |
 | `tanqeeb` | egypt.tanqeeb.com | Egypt |
 | `bayt` | bayt.com | Gulf / MENA |

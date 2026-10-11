@@ -197,11 +197,10 @@ SEARCH_SENIORITY_LEVEL = os.getenv("SEARCH_SENIORITY_LEVEL", "")
 SEARCH_DEFAULT_SITES_SEEDED = _seeded_template_keys("SEARCH_DEFAULT_SITES_SEEDED")
 
 # Which of those templates a fresh install adds to the Search tab by itself.
-# Only the worldwide boards by default: the others cover one region (Wuzzuf
-# and Tanqeeb: Egypt; Bayt and GulfTalent: the Gulf), so they wait until
-# you add them -- list them here, or paste the board's link under Manage
-# sources. Keys: wellfound, simplyhired, wuzzuf, bayt, gulftalent, tanqeeb.
-SEARCH_DEFAULT_BOARDS = set(_list("SEARCH_DEFAULT_BOARDS") or ["wellfound", "simplyhired"])
+# None by default: every known board is listed under Search -> Manage
+# sources with an Add button, so you choose the ones for your region.
+# Keys: wellfound, simplyhired, wuzzuf, bayt, gulftalent, tanqeeb.
+SEARCH_DEFAULT_BOARDS = set(_list("SEARCH_DEFAULT_BOARDS"))
 
 # Max raw results kept from each individual source (each Greenhouse board,
 # Lever company, watchlist row, or added website) before filtering. Blank/0 =

@@ -32,7 +32,9 @@ import cv_parser
 import env_store
 import profile_store
 from agents import email_agent
-from agents.search_agent import BUILTIN_FEEDS, parse_site_url, SENIORITY_LABELS
+from agents.search_agent import (
+    BUILTIN_FEEDS, KNOWN_JOB_BOARD_TEMPLATES, parse_site_url, SENIORITY_LABELS,
+)
 from db import get_session, init_db
 from jobs.daily_run import is_running, pending_summary, request_stop, run_daily_search_and_apply
 from models import (
@@ -1264,12 +1266,41 @@ def list_builtin_sources():
         for env_key, (kind, url) in ENV_BOARD_LISTS.items()
         for value in getattr(config, env_key)
     ]
+    # Known job boards not in the list yet, offered with an Add button. One
+    # that's already added shows up as a normal site row instead.
+    with get_session() as session:
+        added = {r[0] for r in session.query(SearchSite.site_type).all()}
+    available_boards = [
+        {"key": key, "label": meta["label"], "url": meta["default_url"],
+         "region": meta.get("region", "")}
+        for key, meta in KNOWN_JOB_BOARD_TEMPLATES.items() if key not in added
+    ]
     return {
         "feeds": feeds,
         "boards": boards,
+        "available_boards": available_boards,
         "linkedin": list(config.LINKEDIN_LOCATIONS),
         "google_jobs": bool(config.SERPAPI_KEY),
     }
+
+
+class BoardTemplateAdd(BaseModel):
+    key: str
+
+
+@app.post("/api/search/builtin-sources/add-board")
+def add_known_board(body: BoardTemplateAdd):
+    """Adds one of the known job boards (Wuzzuf, Bayt, ...) to the searched
+    list. It then behaves like any other site row, removable with its x."""
+    meta = KNOWN_JOB_BOARD_TEMPLATES.get(body.key)
+    if not meta:
+        raise HTTPException(404, "Unknown job board.")
+    with get_session() as session:
+        if session.query(SearchSite).filter(SearchSite.site_type == body.key).first():
+            raise HTTPException(400, f"{meta['label']} is already in your list.")
+        session.add(SearchSite(url=meta["default_url"], site_type=body.key,
+                               identifier=None, label=meta["label"]))
+    return {"added": body.key}
 
 
 class FeedToggle(BaseModel):

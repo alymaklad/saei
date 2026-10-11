@@ -81,6 +81,20 @@ function siteTile(site) {
   });
 }
 
+// A known board that isn't searched yet: shown dimmed, one click adds it.
+function availableBoardTile(board) {
+  return sourceTile({
+    label: board.label,
+    url: board.url,
+    sub: `${board.region} · not searched`,
+    dim: true,
+    action: `
+      <button type="button" class="inline-flex flex-shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-label-md text-primary transition-colors hover:bg-surface-container" data-add-board="${escapeHtml(board.key)}" title="Search ${escapeHtml(board.label)} too">
+        <span class="ms text-[18px]">add</span>Add
+      </button>`,
+  });
+}
+
 function feedTile(feed) {
   return sourceTile({
     label: feed.label,
@@ -170,9 +184,13 @@ async function loadSites() {
     document.getElementById("boards-body").innerHTML = boardCount
       ? builtin.boards.map(envBoardTile).join("") + apiSites.map(siteTile).join("")
       : `<p class="sa-empty col-span-3">No company boards yet. Paste a board URL below.</p>`;
-    sitesBody.innerHTML = scraped.length ? scraped.map(siteTile).join("")
+    const available = builtin.available_boards || [];
+    sitesBody.innerHTML = scraped.length || available.length
+      ? scraped.map(siteTile).join("") + available.map(availableBoardTile).join("")
       : `<p class="sa-empty col-span-3">No job boards or career pages added.</p>`;
 
+    onEach("[data-add-board]", (btn) => postJSON("/api/search/builtin-sources/add-board",
+      { key: btn.dataset.addBoard }), "Could not add that board.");
     onEach("[data-remove-site]", (btn) => deleteJSON(`/api/search/sites/${btn.dataset.removeSite}`),
       "Could not remove source.");
     onEach("[data-feed]", (btn) => postJSON(`/api/search/builtin-sources/feeds/${btn.dataset.feed}`,

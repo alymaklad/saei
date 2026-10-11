@@ -867,6 +867,7 @@ def _slugify(text: str) -> str:
 KNOWN_JOB_BOARD_TEMPLATES = {
     "wuzzuf": {
         "label": "Wuzzuf",
+        "region": "Egypt",
         "default_url": "https://wuzzuf.net/search/jobs/",
         # Guard against a blank position explicitly (unlike a plain f-string
         # template, this must return None so the dispatcher in run_search()
@@ -879,6 +880,7 @@ KNOWN_JOB_BOARD_TEMPLATES = {
     },
     "bayt": {
         "label": "Bayt.com",
+        "region": "Gulf & MENA",
         "default_url": "https://www.bayt.com/en/international/jobs/",
         "build_url": lambda position: (
             f"https://www.bayt.com/en/international/jobs/{_slugify(position)}-jobs/"
@@ -887,6 +889,7 @@ KNOWN_JOB_BOARD_TEMPLATES = {
     },
     "simplyhired": {
         "label": "SimplyHired",
+        "region": "Worldwide",
         "default_url": "https://www.simplyhired.com/",
         # Confirmed working: ?q= genuinely filters server-side (a "software
         # engineer" query returned real, correctly-matching listings with no
@@ -897,6 +900,7 @@ KNOWN_JOB_BOARD_TEMPLATES = {
     },
     "wellfound": {
         "label": "Wellfound",
+        "region": "Startups · worldwide",
         "default_url": "https://wellfound.com/jobs",
         # Wellfound's search is a curated role taxonomy, not a free-text
         # query -- confirmed working via its role-based URLs (fetching
@@ -914,6 +918,7 @@ KNOWN_JOB_BOARD_TEMPLATES = {
     },
     "gulftalent": {
         "label": "GulfTalent",
+        "region": "Gulf",
         "default_url": "https://www.gulftalent.com/jobs/category/software",
         # GulfTalent's own ?keyword= query param does NOT filter for a plain
         # unauthenticated request -- confirmed by testing: searching
@@ -931,6 +936,7 @@ KNOWN_JOB_BOARD_TEMPLATES = {
     },
     "tanqeeb": {
         "label": "Tanqeeb (Egypt)",
+        "region": "Egypt",
         "default_url": "https://egypt.tanqeeb.com/",
         # Confirmed working: ?keywords= genuinely filters server-side, and the
         # results link to server-rendered /jobs-in-egypt/.../<id>.html pages

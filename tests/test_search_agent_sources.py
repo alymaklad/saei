@@ -179,15 +179,14 @@ def test_new_template_gets_seeded_when_legacy_flag_already_true():
     assert set(to_seed) == {"simplyhired", "wellfound", "gulftalent", "tanqeeb"}
 
 
-def test_a_fresh_install_seeds_only_the_worldwide_boards(monkeypatch):
-    """Regional boards (Egypt, the Gulf) wait until someone adds them."""
+def test_a_fresh_install_seeds_no_job_boards(monkeypatch):
+    """Known boards are offered with an Add button instead of added silently."""
     monkeypatch.delenv("SEARCH_DEFAULT_BOARDS", raising=False)
     import importlib
     import config as cfg
     importlib.reload(cfg)
     try:
-        assert cfg.SEARCH_DEFAULT_BOARDS == {"wellfound", "simplyhired"}
-        assert cfg.SEARCH_DEFAULT_BOARDS <= set(search_agent.KNOWN_JOB_BOARD_TEMPLATES)
+        assert cfg.SEARCH_DEFAULT_BOARDS == set()   # every board waits for an Add click
     finally:
         importlib.reload(cfg)
 
@@ -285,3 +284,8 @@ def test_linkedin_stops_quietly_when_rate_limited(monkeypatch):
     monkeypatch.setattr(config, "LINKEDIN_REQUEST_DELAY", 0)
     with patch("agents.search_agent.requests.get", return_value=Mock(status_code=429)):
         assert search_agent.search_linkedin(["ML Engineer"], ["Egypt"]) == []
+
+
+def test_every_known_board_says_which_region_it_covers():
+    for key, meta in search_agent.KNOWN_JOB_BOARD_TEMPLATES.items():
+        assert meta.get("region"), key
