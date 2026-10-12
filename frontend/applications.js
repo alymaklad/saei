@@ -366,6 +366,9 @@ function openSend(a) {
   const company = a.company || "your company";
   document.getElementById("send-title").textContent = `${title} · ${company}`;
   document.getElementById("to-email").value = a.apply_email || "";
+  document.getElementById("to-hint").textContent = a.apply_email
+    ? "Found in the job posting. Check it before sending."
+    : "No application address in the posting. Add the company's hiring email.";
   document.getElementById("subject").value = `Application for ${title} at ${company}`;
   document.getElementById("body").value = a.cover_letter
     || `Hello,\n\nI'd like to apply for the ${title} position at ${company}. My CV is attached.\n\nBest regards,`;

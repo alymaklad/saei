@@ -152,11 +152,12 @@ def test_email_apply_sends_when_live(quiet, monkeypatch):
     sent = {}
     monkeypatch.setattr("agents.email_agent.is_authenticated", lambda: True)
     monkeypatch.setattr("agents.email_agent.send_application_email",
-                        lambda to, subject, body, cv: sent.update(to=to, cv=cv, body=body) or
+                        lambda to, subject, body, cv, **kw: sent.update(to=to, cv=cv, body=body, **kw) or
                         {"dry_run": False, "gmail_message_id": "m1"})
     state = orchestrator.email_apply_node(orchestrator.decide_apply_path_node(_state(apply_email="hr@acme.com")))
     assert state["status"] == "sent" and state["email"]["gmail_message_id"] == "m1"
-    assert sent == {"to": "hr@acme.com", "cv": "cv/current_cv.pdf", "body": "Dear Hiring Team, ..."}
+    assert sent == {"to": "hr@acme.com", "cv": "cv/current_cv.pdf", "body": "Dear Hiring Team, ...",
+                    "applicant_name": "Aly Maklad", "job_title": "ML Engineer"}
 
 
 def test_email_apply_without_gmail_drafts_instead(quiet, monkeypatch):
@@ -289,3 +290,17 @@ def test_a_sign_in_page_is_refused_not_saved_as_a_job():
     with patch("jobs.apply_from_link.requests.get", return_value=_page(wall)):
         with pytest.raises(ValueError, match="sign-in page"):
             apply_from_link.read_posting("https://careers.example.com/jobs/1")
+
+
+def test_accommodation_and_help_addresses_never_receive_a_cv():
+    """Seen in real postings: the only address in an Airbnb or ServiceNow
+    posting is for candidates who need a disability accommodation."""
+    airbnb = ("If you are a candidate with a disability and require reasonable accommodation "
+              "in order to submit an application, please contact us at: reasonableaccommodations@airbnb.com")
+    servicenow = ("If you require a reasonable accommodation to complete any part of the application "
+                  "process, or are unable to use this online application and need an alternative method "
+                  "to apply, please contact globaltalentss@servicenow.com for assistance.")
+    assert apply_agent.find_application_email(airbnb) is None
+    assert apply_agent.find_application_email(servicenow) is None
+    real = "How to Apply: we are building our talent pool. Please submit your CV to: careers@canadadatalabs.ai"
+    assert apply_agent.find_application_email(real) == "careers@canadadatalabs.ai"

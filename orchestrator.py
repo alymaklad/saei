@@ -350,7 +350,8 @@ def email_apply_node(state: State) -> State:
     name = _applicant_name()
     subject = f"Application for {job.get('title') or 'the open position'}" + (f" – {name}" if name else "")
     try:
-        sent = email_agent.send_application_email(to, subject, letter, attachment)
+        sent = email_agent.send_application_email(to, subject, letter, attachment,
+                                                  applicant_name=name, job_title=job.get("title") or "")
     except Exception as exc:  # noqa: BLE001 -- a send failure leaves a ready draft
         state["email"] = {"to": to, "subject": subject, "status": "failed", "dry_run": False,
                           "error": str(exc)}

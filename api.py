@@ -33,6 +33,7 @@ import cv_parser
 import env_store
 import profile_store
 from agents import email_agent
+from agents.apply_agent import find_application_email
 from agents.search_agent import (
     BUILTIN_FEEDS, KNOWN_JOB_BOARD_TEMPLATES, parse_site_url, SENIORITY_LABELS,
 )
@@ -216,7 +217,9 @@ def list_applications(limit: int = 100, status: Optional[str] = None):
                 "cv_path": a.cv_version_path,
                 "cover_letter": a.cover_letter,
                 "cover_letter_source": a.cover_letter_source,
-                "apply_email": a.apply_email,
+                # Rows saved before the email route existed have none stored:
+                # read it from the job description now (a regex, no LLM).
+                "apply_email": a.apply_email or find_application_email(j.description),
                 "apply_note": a.apply_note,
                 "email_sent": a.email_sent,
                 "date_created": a.date_created.isoformat() if a.date_created else None,
@@ -1206,7 +1209,12 @@ def send_application_email_endpoint(application_id: int, body: SendEmailRequest)
             raise HTTPException(400, "No CV available to attach -- upload one on the CV page first")
 
         try:
-            result = email_agent.send_application_email(body.to_email, body.subject, body.body, cv_path)
+            job = session.query(Job).filter(Job.id == application.job_id).first()
+            profile = profile_store.load_profile_dict() or {}
+            name = ((profile.get("contact") or {}).get("full_name") or config.APPLICANT_NAME or "").strip()
+            result = email_agent.send_application_email(
+                body.to_email, body.subject, body.body, cv_path,
+                applicant_name=name, job_title=(job.title if job else "") or "")
             status = "dry_run" if result.get("dry_run") else "sent"
             session.add(EmailLog(
                 application_id=application.id,

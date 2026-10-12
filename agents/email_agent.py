@@ -181,8 +181,32 @@ def get_gmail_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def send_application_email(to_email: str, subject: str, body: str, cv_path: str) -> dict:
-    """Respects the global DRY_RUN flag — logs intent instead of sending when true."""
+def cv_attachment_name(full_name: str, job_title: str, cv_path: str) -> str:
+    """What the attached CV is called: Firstname_Lastname_JobTitle.pdf.
+
+    The title keeps its core only -- "[EPM] AI Engineer (Joining Bonus)" and
+    "Senior Engineer – Enterprise AI" become AI_Engineer and Senior_Engineer
+    -- because a recruiter's downloads folder shows the start of the name.
+    Falls back to the file's own name when there's no name to use.
+    """
+    import re
+    ext = os.path.splitext(cv_path)[1] or ".pdf"
+    names = [w for w in re.findall(r"[^\W\d_]+", full_name or "")]
+    person = "_".join([names[0], names[-1]] if len(names) > 1 else names)
+    title = re.sub(r"\[[^\]]*\]|\([^)]*\)", " ", job_title or "")
+    title = re.split(r"\s[-–—|:]\s|\s[–—]|[–—]\s|,", title)[0]
+    words = re.findall(r"[^\W_]+(?:[+#.][^\W_]*)*", title)[:6]
+    parts = [p for p in (person, "_".join(words)) if p]
+    if not parts:
+        return os.path.basename(cv_path) or f"CV{ext}"
+    return "_".join(parts) + ext
+
+
+def send_application_email(to_email: str, subject: str, body: str, cv_path: str,
+                           *, applicant_name: str = "", job_title: str = "") -> dict:
+    """Respects the global DRY_RUN flag — logs intent instead of sending when true.
+    The CV goes out named Firstname_Lastname_JobTitle (cv_attachment_name)."""
+    attachment_name = cv_attachment_name(applicant_name, job_title, cv_path)
     if config.DRY_RUN:
         return {
             "dry_run": True,
@@ -190,6 +214,7 @@ def send_application_email(to_email: str, subject: str, body: str, cv_path: str)
             "to": to_email,
             "subject": subject,
             "cv_path": cv_path,
+            "attachment_name": attachment_name,
         }
 
     message = MIMEMultipart()
@@ -197,7 +222,6 @@ def send_application_email(to_email: str, subject: str, body: str, cv_path: str)
     message["subject"] = subject
     message.attach(MIMEText(body))
 
-    attachment_name = os.path.basename(cv_path) or "CV"
     with open(cv_path, "rb") as f:
         part = MIMEApplication(f.read(), Name=attachment_name)
     part["Content-Disposition"] = f'attachment; filename="{attachment_name}"'

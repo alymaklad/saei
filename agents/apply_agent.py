@@ -56,6 +56,15 @@ _NOT_AN_INBOX = re.compile(
     r"@(example|sentry|wixpress|domain)\.|\.(png|jpe?g|gif|svg|webp)$",
     re.I)
 _CUE_WINDOW = 160  # characters either side of the address
+# Text right before an address that makes it a help line, not an inbox for
+# CVs: "if you need a reasonable accommodation ... contact X". Postings on
+# Greenhouse and similar boards almost all carry one of these.
+_HELP_CONTEXT = re.compile(
+    r"accommodat|disabilit|accessib|alternative (method|format)|assistance|"
+    r"equal (employment )?opportunit|eeo|privacy|data protection|personal data|"
+    r"unable to use|special needs",
+    re.I)
+_HELP_WINDOW = 220   # characters before the address
 
 
 def find_application_email(text: str | None) -> str | None:
@@ -74,6 +83,8 @@ def find_application_email(text: str | None) -> str | None:
         address = match.group(0).strip(".").lower()
         if _NOT_AN_INBOX.search(address):
             continue
+        if _HELP_CONTEXT.search(address) or _HELP_CONTEXT.search(text[max(0, match.start() - _HELP_WINDOW): match.start()]):
+            continue  # an accommodations / privacy / help address
         window = text[max(0, match.start() - _CUE_WINDOW): match.end() + _CUE_WINDOW]
         score = len(_APPLY_CUES.findall(window))
         if re.match(r"(hr|jobs?|careers?|recruit\w*|talent|hiring|cv|resumes?|apply)[._@-]", address):

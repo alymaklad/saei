@@ -190,3 +190,25 @@ def test_an_expired_google_sign_in_says_so_and_stops_showing_connected(tmp_path,
         email_agent.get_gmail_service()
     assert not token.exists() and (tmp_path / "token.json.expired").exists()
     assert not email_agent.oauth_authenticated()
+
+
+@pytest.mark.parametrize("title,expected", [
+    ("AI Engineer (Python, Machine Learning, Generative AI/LLMs)", "Aly_Maklad_AI_Engineer.pdf"),
+    ("[EPM] AI Engineer (Joining Bonus)", "Aly_Maklad_AI_Engineer.pdf"),
+    ("Senior Forward Deployed Engineer – Enterprise AI & Agentic Solutions", "Aly_Maklad_Senior_Forward_Deployed_Engineer.pdf"),
+    ("Machine Learning Engineer, Payments", "Aly_Maklad_Machine_Learning_Engineer.pdf"),
+])
+def test_the_cv_is_named_firstname_lastname_jobtitle(title, expected):
+    from agents.email_agent import cv_attachment_name
+    assert cv_attachment_name("Aly Tarek Maklad", title, "cv_output/tailored_123.pdf") == expected
+
+
+def test_the_sent_cv_carries_that_name(gmail, tmp_path):
+    config, email_agent, fake = gmail
+    _signed_in(config, tmp_path)
+    cv = tmp_path / "tailored_123.pdf"
+    cv.write_bytes(b"%PDF-1.4 fake")
+    email_agent.send_application_email("jobs@acme.com", "Application", "Hello", str(cv),
+                                       applicant_name="Aly Maklad", job_title="AI Engineer")
+    names = [p.get_filename() for p in _decoded(fake.sent[0]).walk() if p.get_filename()]
+    assert names == ["Aly_Maklad_AI_Engineer.pdf"]
