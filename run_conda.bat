@@ -53,7 +53,7 @@ if not errorlevel 1 (
     curl -s -m 3 "%API_URL%/api/status" | findstr /c:"llm_provider" >nul
     if not errorlevel 1 (
         echo Sa'ei is already running on %API_URL% -- opening the dashboard.
-        start "" "frontend\index.html"
+        start "" "%API_URL%/"
         exit /b 0
     )
     echo Port %API_PORT% is taken by another program, so the Sa'ei API can't start.
@@ -101,7 +101,7 @@ echo API is up.
 
 :open_dashboard
 echo Opening the dashboard...
-start "" "frontend\index.html"
+start "" "%API_URL%/"
 
 echo.
 echo Sa'ei is running (conda env: job-agent).

@@ -35,11 +35,11 @@ echo Waiting for the API to come up...
 timeout /t 3 /nobreak >nul
 
 echo Opening dashboard...
-start "" "frontend\index.html"
+start "" "http://localhost:8001/"
 
 echo.
 echo Job Application Agent is running.
 echo   - API + Scheduler are in the two new console windows -- close them to stop.
-echo   - Dashboard opened in your browser (reads from http://localhost:8001).
+echo   - Dashboard: http://localhost:8001/
 echo.
 endlocal

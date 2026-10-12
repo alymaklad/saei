@@ -6,6 +6,14 @@
 const API_BASE = window.JOB_AGENT_API_BASE
   ?? ((location.protocol === "file:" || location.port === "5500") ? "http://localhost:8001" : "");
 
+// Opened as a file (an old shortcut, or double-clicking index.html), the page
+// can't reach the API: the API only answers its own pages. Go to the same
+// page as the API serves it instead.
+if (location.protocol === "file:" && !window.JOB_AGENT_API_BASE) {
+  const page = location.pathname.split("/").pop() || "index.html";
+  location.replace(`http://localhost:8001/${page}${location.search}${location.hash}`);
+}
+
 async function getJSON(path) {
   const res = await fetch(`${API_BASE}${path}`);
   if (!res.ok) throw new Error(`${path} -> ${res.status}`);
