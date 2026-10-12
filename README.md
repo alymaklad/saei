@@ -315,7 +315,7 @@ cp .env.example .env     # then fill in what you plan to use
 With only that, it already runs in dry-run mode: Greenhouse and Lever need
 no key, and `DRY_RUN=true` is the default.
 
-### 2. Pick a language model (any one, all free)
+### 2. Pick a language model (any one)
 
 | Provider | Setup | Good to know |
 |---|---|---|
@@ -323,6 +323,8 @@ no key, and `DRY_RUN=true` is the default.
 | **Gemini** | `GEMINI_API_KEY` | Free tier; the same key can also do embeddings. |
 | **Groq** | `GROQ_API_KEY` | Fastest hosted option. Capped at **200k tokens/day**. |
 | **OpenRouter** | `OPENROUTER_API_KEY` | ~400 models. `:free` ids are capped at **50 requests/day** (~15–20 jobs). |
+| **Anthropic** | `ANTHROPIC_API_KEY` | Claude models (`ANTHROPIC_MODEL`, default `claude-sonnet-5-5`). Paid per token, no daily cap. |
+| **OpenAI** | `OPENAI_API_KEY` | OpenAI models (`OPENAI_MODEL`, default `gpt-5-mini`). Paid per token, no daily cap. |
 
 For semantic matching, also run `ollama pull nomic-embed-text` (or
 `qwen3-embedding:4b` for Arabic and mixed-language postings). Without an

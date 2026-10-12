@@ -113,6 +113,8 @@ def _model_id() -> str:
         "ollama": config.OLLAMA_MODEL,
         "groq": config.GROQ_MODEL,
         "openrouter": config.OPENROUTER_MODEL,
+        "anthropic": config.ANTHROPIC_MODEL,
+        "openai": config.OPENAI_MODEL,
     }.get(provider, "default")
 
 

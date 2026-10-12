@@ -42,6 +42,16 @@
             <span class="provider-card-desc">~400 models behind one key, with failover between providers.</span>
             <span class="provider-card-meta">Needs an API key · :free ids capped per request</span>
           </button>
+          <button type="button" data-provider="anthropic" class="provider-card">
+            <span class="provider-card-head"><span class="provider-card-title"><span class="provider-dot"></span>Anthropic Claude</span><span class="provider-badge">Paid</span></span>
+            <span class="provider-card-desc">Claude models: strong at careful reading and writing. No daily cap.</span>
+            <span class="provider-card-meta">Needs an API key · billed per token</span>
+          </button>
+          <button type="button" data-provider="openai" class="provider-card">
+            <span class="provider-card-head"><span class="provider-card-title"><span class="provider-dot"></span>OpenAI</span><span class="provider-badge">Paid</span></span>
+            <span class="provider-card-desc">GPT models from your OpenAI account. No daily cap.</span>
+            <span class="provider-card-meta">Needs an API key · billed per token</span>
+          </button>
         </div>
         <div class="form-field" hidden>
           <label for="llm-provider">API provider</label>
@@ -50,6 +60,8 @@
             <option value="gemini">Google Gemini</option>
             <option value="groq">Groq</option>
             <option value="openrouter">OpenRouter</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="openai">OpenAI</option>
           </select>
         </div>
 
@@ -118,6 +130,46 @@
             <label for="openrouter-model" class="form-field-secondary-label">OpenRouter model</label>
             <input type="text" id="openrouter-model" name="openrouter_model" placeholder="openai/gpt-oss-120b:free">
             <span class="field-hint">Ids ending in <code>:free</code> are limited by <strong>request count</strong>: 20/minute and 50/day unfunded (1,000/day after $10 of credits) — about 15–20 jobs a day. <a href="https://openrouter.ai/models?q=free" target="_blank" rel="noopener">Browse free models &rarr;</a></span>
+          </div>
+
+          <div class="form-field" id="anthropic-fields">
+            <div class="field-row-between">
+              <label for="anthropic-api-key">Anthropic API key</label>
+              <a class="field-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get key &nearr;</a>
+            </div>
+            <div class="password-wrap">
+              <input type="password" id="anthropic-api-key" name="anthropic_api_key" placeholder="Leave blank to keep the current key" autocomplete="off">
+              <button type="button" class="password-toggle" data-target="anthropic-api-key" aria-label="Toggle visibility"><span class="ms text-[18px]">visibility</span></button>
+            </div>
+            <p class="field-note field-note-muted" id="anthropic-key-status"></p>
+            <label for="anthropic-model" class="form-field-secondary-label">Claude model</label>
+            <input type="text" id="anthropic-model" name="anthropic_model" list="anthropic-models" placeholder="claude-sonnet-5-5" autocomplete="off" spellcheck="false">
+            <datalist id="anthropic-models">
+              <option value="claude-sonnet-5-5">Sonnet 5.5, balanced (recommended)</option>
+              <option value="claude-haiku-5-5">Haiku 5.5, fastest and cheapest</option>
+              <option value="claude-opus-5-5">Opus 5.5, most capable</option>
+            </datalist>
+            <span class="field-hint">Paid per token. Sonnet is a good balance of quality and cost for scoring and tailoring.</span>
+          </div>
+
+          <div class="form-field" id="openai-fields">
+            <div class="field-row-between">
+              <label for="openai-api-key">OpenAI API key</label>
+              <a class="field-link" href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Get key &nearr;</a>
+            </div>
+            <div class="password-wrap">
+              <input type="password" id="openai-api-key" name="openai_api_key" placeholder="Leave blank to keep the current key" autocomplete="off">
+              <button type="button" class="password-toggle" data-target="openai-api-key" aria-label="Toggle visibility"><span class="ms text-[18px]">visibility</span></button>
+            </div>
+            <p class="field-note field-note-muted" id="openai-key-status"></p>
+            <label for="openai-model" class="form-field-secondary-label">OpenAI model</label>
+            <input type="text" id="openai-model" name="openai_model" list="openai-models" placeholder="gpt-5-mini" autocomplete="off" spellcheck="false">
+            <datalist id="openai-models">
+              <option value="gpt-5-mini">Fast and low-cost (recommended)</option>
+              <option value="gpt-5">Most capable</option>
+              <option value="gpt-5-nano">Cheapest</option>
+            </datalist>
+            <span class="field-hint">Paid per token. Any model id from your OpenAI account works.</span>
           </div>
         </div>
       </form>

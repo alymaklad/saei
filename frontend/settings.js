@@ -3,6 +3,10 @@ const ollamaFields = document.getElementById("ollama-fields");
 const geminiFields = document.getElementById("gemini-fields");
 const groqFields = document.getElementById("groq-fields");
 const openrouterFields = document.getElementById("openrouter-fields");
+const anthropicFields = document.getElementById("anthropic-fields");
+const openaiFields = document.getElementById("openai-fields");
+const anthropicKeyStatus = document.getElementById("anthropic-key-status");
+const openaiKeyStatus = document.getElementById("openai-key-status");
 const geminiKeyStatus = document.getElementById("gemini-key-status");
 const groqKeyStatus = document.getElementById("groq-key-status");
 const openrouterKeyStatus = document.getElementById("openrouter-key-status");
@@ -14,6 +18,13 @@ function updateVisibleFields() {
   geminiFields.style.display = provider === "gemini" ? "" : "none";
   groqFields.style.display = provider === "groq" ? "" : "none";
   openrouterFields.style.display = provider === "openrouter" ? "" : "none";
+  anthropicFields.style.display = provider === "anthropic" ? "" : "none";
+  openaiFields.style.display = provider === "openai" ? "" : "none";
+}
+
+function paintPaidKeyStatus(s) {
+  setKeyStatus(anthropicKeyStatus, s.anthropic_api_key_set, s.anthropic_api_key_set ? "An Anthropic API key is currently saved." : "No Anthropic API key saved yet.");
+  setKeyStatus(openaiKeyStatus, s.openai_api_key_set, s.openai_api_key_set ? "An OpenAI API key is currently saved." : "No OpenAI API key saved yet.");
 }
 
 providerSelect.addEventListener("change", updateVisibleFields);
@@ -82,6 +93,9 @@ async function loadSettings() {
     groqModelSelect.value = s.groq_model || "openai/gpt-oss-120b";
     syncGroqCustomVisibility();
     document.getElementById("openrouter-model").value = s.openrouter_model || "";
+    document.getElementById("anthropic-model").value = s.anthropic_model || "";
+    document.getElementById("openai-model").value = s.openai_model || "";
+    paintPaidKeyStatus(s);
     setKeyStatus(geminiKeyStatus, s.gemini_api_key_set, s.gemini_api_key_set ? "A Gemini API key is currently saved." : "No Gemini API key saved yet.");
     setKeyStatus(groqKeyStatus, s.groq_api_key_set, s.groq_api_key_set ? "A Groq API key is currently saved." : "No Groq API key saved yet.");
     setKeyStatus(openrouterKeyStatus, s.openrouter_api_key_set, s.openrouter_api_key_set ? "An OpenRouter API key is currently saved." : "No OpenRouter API key saved yet.");
@@ -117,6 +131,10 @@ document.getElementById("settings-form").addEventListener("submit", async (e) =>
     groq_model: groqModelValue(),
     openrouter_api_key: document.getElementById("openrouter-api-key").value || null,
     openrouter_model: document.getElementById("openrouter-model").value || null,
+    anthropic_api_key: document.getElementById("anthropic-api-key").value.trim() || null,
+    anthropic_model: document.getElementById("anthropic-model").value.trim() || null,
+    openai_api_key: document.getElementById("openai-api-key").value.trim() || null,
+    openai_model: document.getElementById("openai-model").value.trim() || null,
   };
 
   try {
@@ -126,6 +144,8 @@ document.getElementById("settings-form").addEventListener("submit", async (e) =>
     document.getElementById("gemini-api-key").value = "";
     document.getElementById("groq-api-key").value = "";
     document.getElementById("openrouter-api-key").value = "";
+    document.getElementById("anthropic-api-key").value = "";
+    document.getElementById("openai-api-key").value = "";
     // Fold a newly typed model into the dropdown and select it, so the control
     // reflects what's actually saved instead of sitting on "Custom…" with a
     // stray text box open. Next reload it comes back from the server anyway.
@@ -142,6 +162,7 @@ document.getElementById("settings-form").addEventListener("submit", async (e) =>
     setKeyStatus(geminiKeyStatus, result.gemini_api_key_set, result.gemini_api_key_set ? "A Gemini API key is currently saved." : "No Gemini API key saved yet.");
     setKeyStatus(groqKeyStatus, result.groq_api_key_set, result.groq_api_key_set ? "A Groq API key is currently saved." : "No Groq API key saved yet.");
     setKeyStatus(openrouterKeyStatus, result.openrouter_api_key_set, result.openrouter_api_key_set ? "An OpenRouter API key is currently saved." : "No OpenRouter API key saved yet.");
+    paintPaidKeyStatus(result);
   } catch (err) {
     saveMessage.textContent = err.message || "Could not save settings.";
     saveMessage.className = "save-message save-error";

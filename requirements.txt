@@ -18,6 +18,9 @@ langchain-groq==1.1.3
 # older ChatOpenAI + base_url override, which needs langchain-openai and
 # loses OpenRouter's routing/failover metadata.
 langchain-openrouter==0.2.9
+# Claude (LLM_PROVIDER=anthropic) and OpenAI (LLM_PROVIDER=openai).
+langchain-anthropic==1.7.6
+langchain-openai==1.7.1
 sqlalchemy==2.0.54
 python-dotenv==1.2.4
 pdfplumber==0.11.10

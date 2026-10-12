@@ -5,6 +5,8 @@ LLM_PROVIDER=ollama     -> local model via Ollama, $0 forever, needs `ollama ser
                            running and the model pulled: `ollama pull qwen3:4b`
 LLM_PROVIDER=gemini     -> Google Gemini API free tier, needs GEMINI_API_KEY
 LLM_PROVIDER=groq       -> Groq API free tier (fast hosted inference), needs GROQ_API_KEY
+LLM_PROVIDER=anthropic  -> Claude models, paid per token, needs ANTHROPIC_API_KEY
+LLM_PROVIDER=openai     -> OpenAI models, paid per token, needs OPENAI_API_KEY
 LLM_PROVIDER=openrouter -> one key in front of ~400 models with cross-provider
                            failover, needs OPENROUTER_API_KEY. Note its free
                            tier is capped by REQUEST COUNT per day, not tokens
@@ -136,6 +138,42 @@ def get_llm(temperature: float = 0.0, max_tokens: int | None = None,
             max_output_tokens=max_tokens,
         )
 
+    if config.LLM_PROVIDER == "anthropic":
+        try:
+            from langchain_anthropic import ChatAnthropic
+        except ImportError as exc:
+            raise RuntimeError(
+                "LLM_PROVIDER=anthropic needs the langchain-anthropic package. "
+                "Run: pip install -r requirements.txt"
+            ) from exc
+        if not config.ANTHROPIC_API_KEY:
+            raise RuntimeError("LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is not set in .env")
+        # Anthropic requires max_tokens on every request; no hidden reasoning
+        # is billed unless extended thinking is turned on, which it isn't.
+        return ChatAnthropic(model=config.ANTHROPIC_MODEL, api_key=config.ANTHROPIC_API_KEY,
+                             temperature=temperature, max_tokens=max_tokens or 4096)
+
+    if config.LLM_PROVIDER == "openai":
+        try:
+            from langchain_openai import ChatOpenAI
+        except ImportError as exc:
+            raise RuntimeError(
+                "LLM_PROVIDER=openai needs the langchain-openai package. "
+                "Run: pip install -r requirements.txt"
+            ) from exc
+        if not config.OPENAI_API_KEY:
+            raise RuntimeError("LLM_PROVIDER=openai but OPENAI_API_KEY is not set in .env")
+        kwargs = {"model": config.OPENAI_MODEL, "api_key": config.OPENAI_API_KEY,
+                  "max_tokens": max_tokens or 4096}
+        if _is_openai_reasoning_model(config.OPENAI_MODEL):
+            # gpt-5 / o-series reason before answering and bill it as output,
+            # like gpt-oss on Groq (see below); "low" keeps the budget for the
+            # answer. They also accept only the default temperature.
+            kwargs["reasoning_effort"] = "low"
+        else:
+            kwargs["temperature"] = temperature
+        return ChatOpenAI(**kwargs)
+
     if config.LLM_PROVIDER == "openrouter":
         try:
             from langchain_openrouter import ChatOpenRouter
@@ -214,6 +252,11 @@ def get_llm(temperature: float = 0.0, max_tokens: int | None = None,
             and _accepts(chat_class, "reasoning")):
         kwargs["reasoning"] = False
     return chat_class(**kwargs)
+
+
+def _is_openai_reasoning_model(model: str) -> bool:
+    m = (model or "").lower()
+    return m.startswith(("gpt-5", "o1", "o3", "o4")) and "chat" not in m
 
 
 def _accepts(cls, name: str) -> bool:

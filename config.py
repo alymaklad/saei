@@ -150,6 +150,14 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 # https://openrouter.ai/models?q=free and set it in Settings.
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-120b:free")
 
+# Anthropic (Claude) and OpenAI -- paid APIs, billed per token, with none of
+# the free tiers' daily caps. Your own key from console.anthropic.com or
+# platform.openai.com.
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+
 # Job search
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
 GREENHOUSE_BOARD_TOKENS = _list("GREENHOUSE_BOARD_TOKENS")

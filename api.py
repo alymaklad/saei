@@ -289,7 +289,7 @@ def news(limit: int = 5):
 
 # ---- settings: LLM provider + API key -------------------------------------
 
-LLM_PROVIDERS = ("ollama", "gemini", "groq", "openrouter")
+LLM_PROVIDERS = ("ollama", "gemini", "groq", "openrouter", "anthropic", "openai")
 
 
 class SettingsUpdate(BaseModel):
@@ -299,6 +299,10 @@ class SettingsUpdate(BaseModel):
     groq_model: Optional[str] = None
     openrouter_api_key: Optional[str] = None
     openrouter_model: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
+    anthropic_model: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    openai_model: Optional[str] = None
     ollama_model: Optional[str] = None
     ollama_base_url: Optional[str] = None
 
@@ -311,10 +315,14 @@ def get_settings():
         "ollama_base_url": config.OLLAMA_BASE_URL,
         "groq_model": config.GROQ_MODEL,
         "openrouter_model": config.OPENROUTER_MODEL,
+        "anthropic_model": config.ANTHROPIC_MODEL,
+        "openai_model": config.OPENAI_MODEL,
         # Never echo the real key back to the frontend -- just whether one is set.
         "gemini_api_key_set": bool(config.GEMINI_API_KEY),
         "groq_api_key_set": bool(config.GROQ_API_KEY),
         "openrouter_api_key_set": bool(config.OPENROUTER_API_KEY),
+        "anthropic_api_key_set": bool(config.ANTHROPIC_API_KEY),
+        "openai_api_key_set": bool(config.OPENAI_API_KEY),
     }
 
 
@@ -349,6 +357,14 @@ def update_settings(body: SettingsUpdate):
         updates["OPENROUTER_API_KEY"] = body.openrouter_api_key
     if body.openrouter_model:
         updates["OPENROUTER_MODEL"] = body.openrouter_model
+    if body.anthropic_api_key:
+        updates["ANTHROPIC_API_KEY"] = body.anthropic_api_key.strip()
+    if body.anthropic_model:
+        updates["ANTHROPIC_MODEL"] = body.anthropic_model.strip()
+    if body.openai_api_key:
+        updates["OPENAI_API_KEY"] = body.openai_api_key.strip()
+    if body.openai_model:
+        updates["OPENAI_MODEL"] = body.openai_model.strip()
 
     if body.llm_provider == "gemini" and not body.gemini_api_key and not config.GEMINI_API_KEY:
         raise HTTPException(400, "GEMINI_API_KEY is required the first time you switch to gemini")
@@ -356,6 +372,10 @@ def update_settings(body: SettingsUpdate):
         raise HTTPException(400, "GROQ_API_KEY is required the first time you switch to groq")
     if body.llm_provider == "openrouter" and not body.openrouter_api_key and not config.OPENROUTER_API_KEY:
         raise HTTPException(400, "OPENROUTER_API_KEY is required the first time you switch to openrouter")
+    if body.llm_provider == "anthropic" and not body.anthropic_api_key and not config.ANTHROPIC_API_KEY:
+        raise HTTPException(400, "An Anthropic API key is required the first time you switch to Anthropic")
+    if body.llm_provider == "openai" and not body.openai_api_key and not config.OPENAI_API_KEY:
+        raise HTTPException(400, "An OpenAI API key is required the first time you switch to OpenAI")
 
     env_store.update_env_file(updates)
 
