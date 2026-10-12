@@ -220,20 +220,8 @@ SEARCH_MAX_AGE_DAYS = _int_or_none("SEARCH_MAX_AGE_DAYS")
 GOOGLE_SHEETS_ID = os.getenv("GOOGLE_SHEETS_ID", "")
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "credentials/service_account.json")
 
-# Gmail -- sends your applications, and your daily report and weekly news.
-# Two ways to connect it, picked on the Settings page (EMAIL_METHOD):
-#   app_password = your Gmail address + a Google App Password
-#                  (myaccount.google.com/apppasswords, needs 2-Step
-#                  Verification). Nothing to set up in Google Cloud.
-#   oauth        = "Sign in with Google": Google's own account chooser,
-#                  through Sa'ei's shared app (SAEI_OAUTH_CLIENT_JSON) or a
-#                  client file of your own (GMAIL_CREDENTIALS_JSON).
-# Blank = app_password once one is saved, otherwise oauth.
-EMAIL_METHOD = os.getenv("EMAIL_METHOD", "").strip().lower()
-GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS", "").strip()
-GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "")
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-SMTP_PORT = _int("SMTP_PORT", 465)
+# Gmail -- sends your applications, and your daily report and weekly news,
+# through "Sign in with Google" (Google's account chooser and consent screen).
 # Sa'ei's shared Google sign-in app, shipped with the code -- what makes
 # "Sign in with Google" work with no Google Cloud setup. A client file of
 # your own at GMAIL_CREDENTIALS_JSON takes precedence over it.

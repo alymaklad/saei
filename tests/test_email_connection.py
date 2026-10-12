@@ -1,94 +1,85 @@
 """
-Gmail, connected either with an App Password (SMTP) or through OAuth, and
-the daily report / weekly news emailed through the same connection. Gmail's
-SMTP server is faked: nothing here sends anything.
+Gmail through "Sign in with Google" (Sa'ei's shared app, or your own client
+file), and the daily report / weekly news emailed through it. The Gmail API
+is faked: nothing here sends anything.
 """
+import base64
 import importlib
-import smtplib
+import json
+from email import message_from_bytes
 
 import pytest
 from fastapi.testclient import TestClient
 
 
-class FakeSMTP:
-    instances = []
+class FakeGmail:
+    """Stands in for googleapiclient's Gmail service: records what's sent."""
+    def __init__(self):
+        self.sent = []
 
-    def __init__(self, host, port, timeout=None):
-        self.host, self.port, self.sent, self.login_args = host, port, [], None
-        FakeSMTP.instances.append(self)
-
-    def __enter__(self):
+    def users(self):
         return self
 
-    def __exit__(self, *exc):
-        return False
+    def messages(self):
+        return self
 
-    def login(self, user, password):
-        if password != "abcdefghijklmnop":
-            raise smtplib.SMTPAuthenticationError(535, b"Username and Password not accepted")
-        self.login_args = (user, password)
+    def send(self, userId, body):
+        self.sent.append(body)
+        return self
 
-    def send_message(self, message):
-        self.sent.append(message)
+    def execute(self):
+        return {"id": f"msg-{len(self.sent)}"}
 
 
 @pytest.fixture
 def gmail(monkeypatch, tmp_path):
     import config
     from agents import email_agent
-    FakeSMTP.instances = []
-    monkeypatch.setattr(email_agent.smtplib, "SMTP_SSL", FakeSMTP)
-    monkeypatch.setattr(config, "EMAIL_METHOD", "")
-    monkeypatch.setattr(config, "GMAIL_ADDRESS", "")
-    monkeypatch.setattr(config, "GMAIL_APP_PASSWORD", "")
+    fake = FakeGmail()
+    monkeypatch.setattr(email_agent, "get_gmail_service", lambda: fake)
     monkeypatch.setattr(config, "REPORT_EMAIL_TO", "")
+    monkeypatch.setattr(config, "APPLICANT_EMAIL", "")
     monkeypatch.setattr(config, "GMAIL_TOKEN_JSON", str(tmp_path / "no_token.json"))
     monkeypatch.setattr(config, "DRY_RUN", False)
-    return config, email_agent
+    return config, email_agent, fake
 
 
-def test_method_defaults_to_oauth_until_an_app_password_is_saved(gmail):
-    config, email_agent = gmail
-    assert email_agent.method() == "oauth" and not email_agent.is_authenticated()
-    config.GMAIL_ADDRESS, config.GMAIL_APP_PASSWORD = "me@gmail.com", "abcdefghijklmnop"
-    assert email_agent.method() == "app_password" and email_agent.is_authenticated()
-    config.EMAIL_METHOD = "oauth"   # an explicit choice wins
-    assert email_agent.method() == "oauth"
+def _signed_in(config, tmp_path, email="me@gmail.com"):
+    token = tmp_path / "token.json"
+    token.write_text(json.dumps({"token": "t", "refresh_token": "r", "client_id": "c",
+                                 "client_secret": "s", "account_email": email}))
+    config.GMAIL_TOKEN_JSON = str(token)
 
 
-def test_a_normal_password_is_rejected_with_a_useful_message(gmail):
-    _, email_agent = gmail
-    with pytest.raises(email_agent.AppPasswordRejected, match="App Password"):
-        email_agent.verify_app_password("me@gmail.com", "my-normal-password")
-    email_agent.verify_app_password("me@gmail.com", "abcd efgh ijkl mnop")   # spaces as Google shows them
+def _decoded(body):
+    return message_from_bytes(base64.urlsafe_b64decode(body["raw"]))
 
 
-def test_reports_go_to_your_own_inbox_over_smtp(gmail):
-    config, email_agent = gmail
-    config.GMAIL_ADDRESS, config.GMAIL_APP_PASSWORD = "me@gmail.com", "abcdefghijklmnop"
+def test_reports_go_to_your_own_inbox(gmail, tmp_path):
+    config, email_agent, fake = gmail
+    _signed_in(config, tmp_path)
     result = email_agent.send_report_email("Sa'ei daily report", "Today's applications:\n- A")
-    assert result["to"] == "me@gmail.com" and result["via"] == "app_password"
-    message = FakeSMTP.instances[-1].sent[0]
+    assert result["to"] == "me@gmail.com" and result["gmail_message_id"] == "msg-1"
+    message = _decoded(fake.sent[0])
     assert message["to"] == "me@gmail.com" and message["subject"] == "Sa'ei daily report"
-    assert "me@gmail.com" in message["from"]
 
 
-def test_reports_respect_dry_run_and_a_missing_connection(gmail):
-    config, email_agent = gmail
-    assert "error" in email_agent.send_report_email("s", "b")   # nothing connected
+def test_reports_respect_dry_run_and_a_missing_sign_in(gmail):
+    config, email_agent, fake = gmail
+    assert "error" in email_agent.send_report_email("s", "b")   # nobody signed in
     config.DRY_RUN = True
     assert email_agent.send_report_email("s", "b")["dry_run"] is True
-    assert FakeSMTP.instances == []
+    assert fake.sent == []
 
 
-def test_application_email_goes_over_smtp_with_the_cv(gmail, tmp_path):
-    config, email_agent = gmail
-    config.GMAIL_ADDRESS, config.GMAIL_APP_PASSWORD = "me@gmail.com", "abcdefghijklmnop"
+def test_application_email_carries_the_cv(gmail, tmp_path):
+    config, email_agent, fake = gmail
+    _signed_in(config, tmp_path)
     cv = tmp_path / "cv.pdf"
     cv.write_bytes(b"%PDF-1.4 fake")
     result = email_agent.send_application_email("jobs@acme.com", "Application", "Hello", str(cv))
-    assert result["dry_run"] is False and result["via"] == "app_password"
-    message = FakeSMTP.instances[-1].sent[0]
+    assert result["dry_run"] is False
+    message = _decoded(fake.sent[0])
     assert message["to"] == "jobs@acme.com"
     assert any(part.get_filename() == "cv.pdf" for part in message.walk())
 
@@ -97,7 +88,7 @@ def test_application_email_goes_over_smtp_with_the_cv(gmail, tmp_path):
 
 @pytest.fixture
 def client(gmail, tmp_path, monkeypatch):
-    config, _ = gmail
+    config, _, _ = gmail
     monkeypatch.setattr(config, "DATABASE_URL", f"sqlite:///{tmp_path/'api.db'}")
     monkeypatch.setattr(config, "APP_PASSWORD", "")
     import db
@@ -105,44 +96,32 @@ def client(gmail, tmp_path, monkeypatch):
     db.Base.metadata.create_all(db.engine)
     import api
     importlib.reload(api)
-    written = {}
+
     # Never touch the real .env, and keep this test's config instead of reloading it.
     def fake_apply(updates):
-        written.update(updates)
         for key, value in updates.items():
-            attr = {"GMAIL_APP_PASSWORD": "GMAIL_APP_PASSWORD"}.get(key, key)
-            setattr(config, attr, value or "")
+            setattr(config, key, value or "")
     monkeypatch.setattr(api, "_apply_env", fake_apply)
-    return TestClient(api.app), written
+    _signed_in(config, tmp_path)
+    return TestClient(api.app)
 
 
-def test_signing_in_with_an_app_password_saves_it_only_once_gmail_accepts_it(client):
-    tc, written = client
-    bad = tc.post("/api/email/app-password", json={"address": "me@gmail.com", "app_password": "nope"})
-    assert bad.status_code == 400 and "App Password" in bad.json()["detail"] and not written
-
-    ok = tc.post("/api/email/app-password",
-                 json={"address": "me@gmail.com", "app_password": "abcd efgh ijkl mnop"})
-    assert ok.status_code == 200
-    body = ok.json()
-    assert body["authenticated"] and body["method"] == "app_password"
-    assert body["address"] == "me@gmail.com" and body["report_to"] == "me@gmail.com"
-    assert written["GMAIL_APP_PASSWORD"] == "abcdefghijklmnop"
-    assert "abcdefghijklmnop" not in ok.text   # never echoed back
+def test_status_shows_who_is_sending_and_there_is_no_app_password_route(client):
+    body = client.get("/api/email/status").json()
+    assert body["authenticated"] and body["address"] == "me@gmail.com"
+    assert "method" not in body and "app_password_saved" not in body
+    assert client.post("/api/email/app-password", json={}).status_code in (404, 405)
 
 
 def test_report_recipient_can_be_changed_and_reset(client):
-    tc, _ = client
-    tc.post("/api/email/app-password", json={"address": "me@gmail.com", "app_password": "abcdefghijklmnop"})
-    assert tc.post("/api/email/report-to", json={"address": "other@x.com"}).json()["report_to"] == "other@x.com"
-    assert tc.post("/api/email/report-to", json={"address": ""}).json()["report_to"] == "me@gmail.com"
-    assert tc.post("/api/email/report-to", json={"address": "not-an-email"}).status_code == 400
+    assert client.post("/api/email/report-to", json={"address": "other@x.com"}).json()["report_to"] == "other@x.com"
+    assert client.post("/api/email/report-to", json={"address": ""}).json()["report_to"] == "me@gmail.com"
+    assert client.post("/api/email/report-to", json={"address": "not-an-email"}).status_code == 400
 
 
 # ---- Sign in with Google: the shared app ---------------------------------------------
 
 def _client_file(path, client_id="id-123.apps.googleusercontent.com", secret="s3cret"):
-    import json
     path.write_text(json.dumps({"installed": {
         "client_id": client_id, "client_secret": secret,
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
@@ -151,7 +130,7 @@ def _client_file(path, client_id="id-123.apps.googleusercontent.com", secret="s3
 
 
 def test_the_shared_app_is_used_unless_you_bring_your_own(gmail, tmp_path, monkeypatch):
-    config, email_agent = gmail
+    config, email_agent, _ = gmail
     monkeypatch.setattr(config, "GMAIL_CREDENTIALS_JSON", str(tmp_path / "missing.json"))
     monkeypatch.setattr(config, "SAEI_OAUTH_CLIENT_JSON", _client_file(tmp_path / "shared.json", "shared-id"))
     client, source = email_agent.oauth_client()
@@ -162,29 +141,32 @@ def test_the_shared_app_is_used_unless_you_bring_your_own(gmail, tmp_path, monke
     assert source == "own" and client["installed"]["client_id"] == "own-id"
 
 
-def test_the_shipped_placeholder_means_google_sign_in_is_off(gmail, tmp_path, monkeypatch):
-    config, email_agent = gmail
-    import pathlib
-    shipped = pathlib.Path(__file__).resolve().parent.parent / "google_oauth_client.json"
+def test_an_empty_client_file_means_google_sign_in_is_off(gmail, tmp_path, monkeypatch):
+    config, email_agent, _ = gmail
     monkeypatch.setattr(config, "GMAIL_CREDENTIALS_JSON", str(tmp_path / "missing.json"))
     monkeypatch.setattr(config, "SAEI_OAUTH_CLIENT_JSON", _client_file(tmp_path / "blank.json", "", ""))
     assert email_agent.oauth_client() == (None, None) and not email_agent.credentials_configured()
-    assert shipped.exists()   # the file the real app reads ships with the code
+
+
+def test_the_shipped_shared_app_is_filled_in(gmail, monkeypatch):
+    import pathlib
+    config, email_agent, _ = gmail
+    shipped = pathlib.Path(__file__).resolve().parent.parent / "google_oauth_client.json"
+    monkeypatch.setattr(config, "GMAIL_CREDENTIALS_JSON", "missing.json")
+    monkeypatch.setattr(config, "SAEI_OAUTH_CLIENT_JSON", str(shipped))
+    client, source = email_agent.oauth_client()
+    assert source == "bundled" and client["installed"]["client_id"].endswith(".apps.googleusercontent.com")
 
 
 def test_the_signed_in_account_is_read_from_googles_id_token(gmail):
-    import base64, json
-    _, email_agent = gmail
+    _, email_agent, _ = gmail
     payload = base64.urlsafe_b64encode(json.dumps({"email": "me@gmail.com"}).encode()).decode().rstrip("=")
     assert email_agent._email_from_id_token(f"header.{payload}.signature") == "me@gmail.com"
     assert email_agent._email_from_id_token(None) == ""
     assert email_agent._email_from_id_token("garbage") == ""
 
 
-def test_sender_address_comes_from_the_saved_token(gmail, tmp_path, monkeypatch):
-    import json
-    config, email_agent = gmail
-    token = tmp_path / "token.json"
-    token.write_text(json.dumps({"token": "t", "account_email": "me@gmail.com"}))
-    monkeypatch.setattr(config, "GMAIL_TOKEN_JSON", str(token))
-    assert email_agent.method() == "oauth" and email_agent.sender_address() == "me@gmail.com"
+def test_sender_address_comes_from_the_saved_token(gmail, tmp_path):
+    config, email_agent, _ = gmail
+    _signed_in(config, tmp_path)
+    assert email_agent.sender_address() == "me@gmail.com"

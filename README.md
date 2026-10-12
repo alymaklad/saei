@@ -367,17 +367,11 @@ Any other careers page can be pasted too; it's read on a best-effort basis.
 ### Connect Gmail (optional)
 
 Gmail sends the applications you approve, plus your daily report and weekly
-news. In **Settings → Notifications & Channels**, pick one:
-
-- **Sign in with Google.** Google's own account chooser opens in a new tab:
-  pick your account and allow Sa'ei to send email. Sa'ei can only send, not
-  read your inbox. (Available once this copy has Sa'ei's Google app set up;
-  see [docs/google-sign-in.md](docs/google-sign-in.md).)
-- **Use an App Password.** Enter your address and a Google *App Password*.
-  Google doesn't let apps use your normal password, so: turn on 2-Step
-  Verification, open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords),
-  create one named "Sa'ei", and paste the 16 letters. It's checked with Gmail
-  before it's saved, and you can revoke it there any time.
+news. In **Settings → Notifications & Channels**, click **Sign in with
+Google**: Google's own account chooser opens in a new tab; pick your account
+and allow Sa'ei to send email. Sa'ei can only send, not read your inbox. It
+uses Sa'ei's shared Google app, so there's nothing to set up (see
+[docs/google-sign-in.md](docs/google-sign-in.md)).
 
 Reports go to your own address unless you set another under *Send reports to*.
 While `DRY_RUN=true`, nothing is sent; reports are only logged on the Reports page.
@@ -503,7 +497,7 @@ python -m bench.report --calibrate  # re-derive semantic thresholds after changi
 | Embeddings | Ollama `nomic-embed-text` / `qwen3-embedding:4b` · Gemini `gemini-embedding-001` |
 | Job sources | Greenhouse & Lever APIs, RemoteOK, We Work Remotely, SerpAPI (optional), Google Sheets watchlist, scraped career pages |
 | Documents | `pdfplumber`, `python-docx`, `reportlab` |
-| Delivery | Gmail: App Password (SMTP) or Gmail API (OAuth) |
+| Delivery | Gmail API, through Sign in with Google (OAuth) |
 | Storage / API | SQLite + SQLAlchemy, FastAPI |
 | Frontend | Static HTML/JS + pre-compiled Tailwind |
 

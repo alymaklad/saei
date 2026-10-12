@@ -985,12 +985,9 @@ def _apply_env(updates: dict) -> None:
 
 @app.get("/api/email/status")
 def email_status():
-    # Never the App Password itself -- only whether one is saved.
     return {
-        "method": email_agent.method(),
         "authenticated": email_agent.is_authenticated(),
         "address": email_agent.sender_address(),
-        "app_password_saved": bool(config.GMAIL_APP_PASSWORD),
         "credentials_configured": email_agent.credentials_configured(),
         "oauth_client": email_agent.oauth_client()[1],   # "bundled", "own" or None
         "oauth_authenticated": email_agent.oauth_authenticated(),
@@ -998,47 +995,6 @@ def email_status():
         "report_to_custom": bool(config.REPORT_EMAIL_TO),
         "dry_run": config.DRY_RUN,
     }
-
-
-class AppPasswordLogin(BaseModel):
-    address: str
-    app_password: str
-
-
-@app.post("/api/email/app-password")
-def email_app_password(body: AppPasswordLogin):
-    """Sign in with a Gmail address and App Password. Checked against Gmail
-    before it's saved, so a typo fails here rather than at 08:00 tomorrow."""
-    address = body.address.strip()
-    password = body.app_password.replace(" ", "").strip()
-    if "@" not in address or not password:
-        raise HTTPException(400, "Enter your Gmail address and the App Password.")
-    try:
-        email_agent.verify_app_password(address, password)
-    except email_agent.AppPasswordRejected as exc:
-        raise HTTPException(400, str(exc))
-    _apply_env({"EMAIL_METHOD": "app_password", "GMAIL_ADDRESS": address,
-                "GMAIL_APP_PASSWORD": password})
-    return email_status()
-
-
-@app.post("/api/email/disconnect")
-def email_disconnect():
-    """Forget the saved App Password (OAuth tokens are left alone)."""
-    _apply_env({"GMAIL_APP_PASSWORD": None})
-    return email_status()
-
-
-class EmailMethod(BaseModel):
-    method: str
-
-
-@app.post("/api/email/method")
-def email_method(body: EmailMethod):
-    if body.method not in email_agent.METHODS:
-        raise HTTPException(400, f"method must be one of: {', '.join(email_agent.METHODS)}")
-    _apply_env({"EMAIL_METHOD": body.method})
-    return email_status()
 
 
 class ReportRecipient(BaseModel):
@@ -1060,8 +1016,8 @@ def email_authenticate():
     if not email_agent.credentials_configured():
         raise HTTPException(
             400,
-            "Sign in with Google isn't set up in this copy of Sa'ei. Use an App "
-            "Password instead, or add an OAuth client file at "
+            "Sign in with Google isn't set up in this copy of Sa'ei. Add an "
+            "OAuth client file at "
             f"{config.GMAIL_CREDENTIALS_JSON}.",
         )
     try:
@@ -1079,7 +1035,6 @@ def email_authenticate():
         )
     except Exception as exc:  # noqa: BLE001 -- surface the real OAuth error to the UI
         raise HTTPException(400, f"Authentication failed: {exc}")
-    _apply_env({"EMAIL_METHOD": "oauth"})
     return {"authenticated": True}
 
 

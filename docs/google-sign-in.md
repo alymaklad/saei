@@ -2,8 +2,8 @@
 
 Users of Sa'ei sign in with Google through **one shared Google app**, whose
 ID lives in [`google_oauth_client.json`](../google_oauth_client.json). This is
-done once, by whoever publishes Sa'ei. Until it's filled in, the Settings page
-offers only the App Password route.
+done once, by whoever publishes Sa'ei. Until it's filled in, Settings can't
+connect Gmail (unless a user adds a client file of their own).
 
 ## 1. Create the app (about 10 minutes)
 

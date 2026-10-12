@@ -564,52 +564,25 @@ function setChip(el, text, good) {
     ? "bg-secondary-container text-on-secondary-fixed-variant" : "bg-tertiary-fixed text-on-tertiary-fixed-variant"}`;
 }
 
-// ---- Gmail: two ways to connect, one of them active -----------------------------
+// ---- Gmail: Sign in with Google ----------------------------------------------------
 
 let emailStatus = null;
-let shownMethod = null;
-
-function showEmailMethod(method) {
-  shownMethod = method;
-  document.querySelectorAll("[data-email-method]").forEach((tab) => {
-    const on = tab.dataset.emailMethod === method;
-    tab.classList.toggle("is-active", on);
-    tab.setAttribute("aria-selected", on);
-  });
-  document.querySelectorAll("[data-email-panel]").forEach((panel) => {
-    panel.hidden = panel.dataset.emailPanel !== method;
-  });
-}
 
 function paintEmailStatus(s) {
   emailStatus = s;
   const chip = document.getElementById("gmail-chip");
   const statusEl = document.getElementById("gmail-status");
-  const how = s.method === "app_password" ? "with an App Password" : "with Google sign-in";
   if (s.authenticated) {
     setChip(chip, "Connected", true);
-    statusEl.textContent = `Sending as ${s.address || "your Gmail account"} — ${how}.`;
+    statusEl.textContent = `Sending as ${s.address || "your Gmail account"}.`;
   } else {
     setChip(chip, "Not connected", false);
-    statusEl.textContent = "Not connected yet — choose a way below.";
+    statusEl.textContent = "Not connected yet — sign in below.";
   }
-  // Show the way in use; with nothing connected yet, Google sign-in when
-  // this copy of Sa'ei has it set up, else the App Password form.
-  if (!shownMethod) {
-    showEmailMethod(s.authenticated || s.app_password_saved ? s.method
-      : s.credentials_configured ? "oauth" : "app_password");
-  }
-
-  const address = document.getElementById("gmail-address");
-  if (!address.value && s.method === "app_password") address.value = s.address || "";
-  document.getElementById("gmail-app-password").placeholder = s.app_password_saved
-    ? "Saved — enter a new one to replace it" : "16 letters, e.g. abcd efgh ijkl mnop";
-  document.getElementById("app-password-forget").hidden = !s.app_password_saved;
-
   const oauth = document.getElementById("oauth-status");
   oauth.textContent = s.oauth_authenticated
-    ? `Signed in${s.method === "oauth" && s.address ? ` as ${s.address}` : ""}.`
-    : s.credentials_configured ? "" : "Google sign-in isn't set up in this copy of Sa'ei yet. Use an App Password instead.";
+    ? `Signed in${s.address ? ` as ${s.address}` : ""}.`
+    : s.credentials_configured ? "" : "Google sign-in isn't set up in this copy of Sa'ei (no google_oauth_client.json).";
   connectBtn.disabled = !s.credentials_configured;
   document.getElementById("connect-label").textContent = s.oauth_authenticated
     ? "Sign in with a different account" : "Sign in with Google";
@@ -643,47 +616,6 @@ function emailMessage(id, text, ok) {
   el.textContent = text;
   el.className = `mt-1 text-body-sm ${ok === undefined ? "text-on-surface-variant" : ok ? "save-success" : "save-error"}`;
 }
-
-document.querySelectorAll("[data-email-method]").forEach((tab) => {
-  tab.addEventListener("click", async () => {
-    const method = tab.dataset.emailMethod;
-    showEmailMethod(method);
-    // Switching only takes effect once that way is actually connected; until
-    // then the working connection keeps sending.
-    const ready = method === "app_password" ? emailStatus?.app_password_saved : emailStatus?.oauth_authenticated;
-    if (ready && emailStatus?.method !== method) {
-      try { paintEmailStatus(await postJSON("/api/email/method", { method })); } catch (e) { /* keep the old one */ }
-    }
-  });
-});
-
-document.getElementById("app-password-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById("app-password-btn");
-  const address = document.getElementById("gmail-address").value.trim();
-  const passwordInput = document.getElementById("gmail-app-password");
-  btn.disabled = true;
-  emailMessage("app-password-message", "Checking with Gmail…");
-  try {
-    paintEmailStatus(await postJSON("/api/email/app-password", { address, app_password: passwordInput.value }));
-    passwordInput.value = "";
-    emailMessage("app-password-message", "Signed in. Gmail accepted it.", true);
-  } catch (err) {
-    emailMessage("app-password-message", err.message || "Sign-in failed.", false);
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-document.getElementById("app-password-forget").addEventListener("click", async () => {
-  if (!confirm("Forget the saved App Password? Sending stops until you sign in again.")) return;
-  try {
-    paintEmailStatus(await postJSON("/api/email/disconnect", {}));
-    emailMessage("app-password-message", "Forgotten. You can also revoke it at myaccount.google.com/apppasswords.");
-  } catch (err) {
-    emailMessage("app-password-message", err.message || "Could not forget it.", false);
-  }
-});
 
 connectBtn.addEventListener("click", async () => {
   connectBtn.disabled = true;

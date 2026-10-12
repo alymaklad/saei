@@ -1,26 +1,17 @@
 """
 Email Agent — sends from your own Gmail account (free, no per-email cost).
 
-Two ways to connect, chosen on the Settings page (config.EMAIL_METHOD):
+You connect it with "Sign in with Google": Google's account chooser and
+consent screen open in the browser, then mail goes out through the Gmail API.
+That uses Sa'ei's shared Google app (google_oauth_client.json), so a user
+sets up nothing -- or a client file of their own, if they add one.
 
-  app_password  Your Gmail address and a Google App Password, over Gmail's
-                SMTP server. The simple route: no Google Cloud project.
-                Google refuses an account's normal password from apps, so
-                it has to be an App Password (needs 2-Step Verification).
-  oauth         "Sign in with Google": Google's account chooser and consent
-                screen in the browser, then the Gmail API. Uses Sa'ei's
-                shared Google app (google_oauth_client.json), so a user sets
-                up nothing -- or a client file of their own if they add one.
-
-Everything else -- applications, the daily report, the weekly news -- goes
-through _send() and doesn't care which one is in use.
+Applications, the daily report and the weekly news all go through _send().
 """
 import base64
 import json
 import os
-import smtplib
 from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
@@ -48,7 +39,7 @@ def _read_client_file(path: str) -> dict | None:
 
 def oauth_client() -> tuple[dict | None, str | None]:
     """(client config, where it came from): your own file first, then Sa'ei's
-    shared app, else (None, None) and only the App Password route is offered."""
+    shared app, else (None, None): Google sign-in isn't available."""
     own = _read_client_file(config.GMAIL_CREDENTIALS_JSON)
     if own:
         return own, "own"
@@ -83,52 +74,18 @@ def oauth_account_email() -> str:
         return ""
 
 
-METHODS = ("app_password", "oauth")
-
-
-def method() -> str:
-    """The connection in use: the one chosen in Settings, else App Password
-    once one is saved, else OAuth."""
-    if config.EMAIL_METHOD in METHODS:
-        return config.EMAIL_METHOD
-    return "app_password" if config.GMAIL_APP_PASSWORD else "oauth"
-
-
 def is_authenticated() -> bool:
     """Whether sending can work right now, without sending anything or
     opening a browser. Used by GET /api/email/status and before applying."""
-    if method() == "app_password":
-        return bool(config.GMAIL_ADDRESS and config.GMAIL_APP_PASSWORD)
     return oauth_authenticated()
 
 
 def sender_address() -> str:
-    if method() == "app_password":
-        return config.GMAIL_ADDRESS
     return oauth_account_email() or config.APPLICANT_EMAIL
 
 
 def report_recipient() -> str:
     return config.REPORT_EMAIL_TO or sender_address()
-
-
-class AppPasswordRejected(ValueError):
-    """Gmail refused the address/App Password pair."""
-
-
-def verify_app_password(address: str, app_password: str) -> None:
-    """Signs in to Gmail's SMTP server and out again, sending nothing.
-    Raises AppPasswordRejected with a message the Settings page can show."""
-    try:
-        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=20) as smtp:
-            smtp.login(address, app_password.replace(" ", ""))
-    except smtplib.SMTPAuthenticationError as exc:
-        raise AppPasswordRejected(
-            "Gmail didn't accept that. Use an App Password (16 letters, from "
-            "myaccount.google.com/apppasswords), not your normal Gmail password."
-        ) from exc
-    except (OSError, smtplib.SMTPException) as exc:
-        raise AppPasswordRejected(f"Couldn't reach Gmail to check it: {exc}") from exc
 
 
 def oauth_authenticated() -> bool:
@@ -187,8 +144,8 @@ def get_gmail_service():
             client, _source = oauth_client()
             if client is None:
                 raise RuntimeError(
-                    "Sign in with Google isn't set up in this copy of Sa'ei. Use an App "
-                    "Password instead, or add an OAuth client file at "
+                    "Sign in with Google isn't set up in this copy of Sa'ei. Add an "
+                    "OAuth client file at "
                     f"{config.GMAIL_CREDENTIALS_JSON}.")
             flow = InstalledAppFlow.from_client_config(client, SIGN_IN_SCOPES)
             creds = flow.run_local_server(
@@ -252,18 +209,8 @@ def send_report_email(subject: str, body: str) -> dict:
 
 
 def _send(message: MIMEMultipart) -> dict:
-    """Sends a built message through whichever connection is in use."""
-    if method() == "app_password":
-        if not (config.GMAIL_ADDRESS and config.GMAIL_APP_PASSWORD):
-            raise RuntimeError("Gmail isn't connected. Add your address and App Password in Settings.")
-        if "from" not in message:
-            message["from"] = formataddr((config.APPLICANT_NAME or "", config.GMAIL_ADDRESS))
-        with smtplib.SMTP_SSL(config.SMTP_HOST, config.SMTP_PORT, timeout=30) as smtp:
-            smtp.login(config.GMAIL_ADDRESS, config.GMAIL_APP_PASSWORD)
-            smtp.send_message(message)
-        return {"via": "app_password"}
-
+    """Sends a built message through the Gmail API."""
     service = get_gmail_service()
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
     result = service.users().messages().send(userId="me", body={"raw": raw}).execute()
-    return {"via": "oauth", "gmail_message_id": result.get("id")}
+    return {"gmail_message_id": result.get("id")}

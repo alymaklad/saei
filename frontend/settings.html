@@ -328,44 +328,13 @@
             <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">mail</span></span>
             <div class="flex-1">
               <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Gmail <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="gmail-chip">&hellip;</span></p>
-              <p class="text-body-sm text-on-surface-variant">Sends the applications you approve and your reports, from your own Gmail. Nothing goes through a third party. Choose one way to connect:</p>
+              <p class="text-body-sm text-on-surface-variant">Sends the applications you approve and your reports, from your own Gmail. Nothing goes through a third party.</p>
               <p class="mt-1 text-body-sm text-on-surface-variant" id="gmail-status">Checking&hellip;</p>
             </div>
           </div>
 
-          <div class="mt-space-md flex gap-1 rounded-lg bg-surface-container-low p-1" role="tablist" aria-label="How to connect Gmail">
-            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="oauth">Sign in with Google</button>
-            <button type="button" class="sa-tab flex-1" role="tab" data-email-method="app_password">Use an App Password</button>
-          </div>
-
-          <!-- App Password -->
-          <div class="mt-space-md" data-email-panel="app_password" hidden>
-            <form id="app-password-form" class="grid grid-cols-[1fr_1fr_auto] items-end gap-space-sm" autocomplete="off">
-              <div>
-                <label for="gmail-address" class="sa-label">Gmail address</label>
-                <input type="email" id="gmail-address" class="sa-input" placeholder="you@gmail.com" autocomplete="username">
-              </div>
-              <div>
-                <label for="gmail-app-password" class="sa-label">App Password</label>
-                <input type="password" id="gmail-app-password" class="sa-input" placeholder="16 letters, e.g. abcd efgh ijkl mnop" autocomplete="new-password">
-              </div>
-              <button type="submit" class="sa-btn-primary" id="app-password-btn"><span class="ms text-[18px]">login</span>Sign in</button>
-            </form>
-            <p class="mt-2 text-body-sm" id="app-password-message"></p>
-            <button type="button" class="mt-1 text-label-md text-on-surface-variant hover:text-error" id="app-password-forget" hidden>Forget the saved App Password</button>
-            <details class="mt-space-sm text-body-sm text-on-surface-variant">
-              <summary class="cursor-pointer list-none text-label-md hover:text-primary">How to get an App Password (1 minute) &darr;</summary>
-              <ol class="mt-2 list-decimal space-y-1 pl-5">
-                <li>Turn on 2-Step Verification for your Google account, if it isn't already.</li>
-                <li>Open <a class="text-primary hover:underline" href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">myaccount.google.com/apppasswords</a>, type a name such as “Sa'ei” and press Create.</li>
-                <li>Copy the 16-letter password into the box above and press Sign in.</li>
-              </ol>
-              <p class="mt-2">Google doesn't let apps use your normal Gmail password, which is why this one is needed. It only works for this app, it's stored in your <code>.env</code> on this computer, and you can revoke it on the same Google page at any time.</p>
-            </details>
-          </div>
-
-          <!-- OAuth: Google's own account chooser -->
-          <div class="mt-space-md" data-email-panel="oauth" hidden>
+          <!-- Google's own account chooser -->
+          <div class="mt-space-md">
             <div class="flex items-center gap-space-md">
               <button type="button" id="connect-btn"
                       class="inline-flex items-center gap-3 rounded-full border border-outline-variant bg-white px-4 py-2 text-[14px] font-medium text-[#1f1f1f] shadow-xs transition-colors hover:bg-[#f8f9fa] disabled:opacity-50">
