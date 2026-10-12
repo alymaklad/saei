@@ -530,15 +530,6 @@ atsScoreModeSelect.addEventListener("change", syncFitRange);
 syncModeCards();
 syncProviderCards();
 
-// Section tabs: highlight the section currently in view.
-const sectionTabs = [...document.querySelectorAll("[data-section]")];
-const sectionObserver = new IntersectionObserver((entries) => {
-  entries.forEach((en) => {
-    if (!en.isIntersecting) return;
-    sectionTabs.forEach((t) => t.classList.toggle("is-active", t.getAttribute("href") === `#${en.target.id}`));
-  });
-}, { rootMargin: "-30% 0px -60% 0px" });
-sectionTabs.forEach((t) => sectionObserver.observe(document.querySelector(t.getAttribute("href"))));
 
 // ---- 2026-09-24 layout: one Save for all three forms, extra slider ---------
 
@@ -547,7 +538,7 @@ matchRange.addEventListener("input", () => { matchScoreThreshold.value = matchRa
 matchScoreThreshold.addEventListener("input", () => { matchRange.value = matchScoreThreshold.value; });
 
 // Each form keeps its own endpoint and its own message next to its heading;
-// the page-level button just submits all three.
+// the Save button (shown on those three sections) submits all three.
 document.getElementById("save-all").addEventListener("click", () => {
   ["settings-form", "auto-apply-form", "matching-form"].forEach((id) => {
     document.getElementById(id).requestSubmit();

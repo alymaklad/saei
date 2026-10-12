@@ -274,7 +274,7 @@ from any static server). It talks to the FastAPI backend in `api.py`, and its de
 | **CV** | Master CV (view, download, replace), every tailored CV with its before → after ATS score, and the **ATS & tailoring bench**: paste a job description and see the score and rewrite without saving anything |
 | **Profile** | The extracted profile every agent reads, in sections that open one at a time; reorder them (tailored CVs follow the order) or add your own |
 | **Reports** | Headline numbers, a plain-language momentum summary, skill-gap bars, where roles come from, the latest news digest, and every dispatch (report emails and application emails) |
-| **Settings** | AI provider and keys, autonomy mode, ATS and match thresholds, advanced matching, and notification channels (Gmail sign-in, where reports are emailed; Gmail connection) |
+| **Settings** | Opened from the profile card at the bottom of the sidebar (Profile · Settings · Help). Its own menu of sections: AI model, autonomy, matching thresholds, email & reports, and help (Gmail sign-in, where reports are emailed; Gmail connection) |
 
 Styling uses Tailwind, shipped **pre-compiled** as `frontend/tailwind.css`,
 and fonts are stored in the repo, so the dashboard needs no CDN and no build
@@ -367,7 +367,7 @@ Any other careers page can be pasted too; it's read on a best-effort basis.
 ### Connect Gmail (optional)
 
 Gmail sends the applications you approve, plus your daily report and weekly
-news. In **Settings → Notifications & Channels**, click **Sign in with
+news. In **Settings → Email & reports** (open Settings from the profile card at the bottom of the sidebar), click **Sign in with
 Google**: Google's own account chooser opens in a new tab; pick your account
 and allow Sa'ei to send email. Sa'ei can only send, not read your inbox. It
 uses Sa'ei's shared Google app, so there's nothing to set up (see

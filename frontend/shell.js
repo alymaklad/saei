@@ -7,9 +7,17 @@
 // #status-pill that config.js fills on DOMContentLoaded already exists.
 
 (function () {
-  // The 2026-09-24 design has seven destinations. Email and Features were
-  // folded in elsewhere: sending lives on Applications, the Gmail connection
-  // on Settings, and the sent-email log on Reports.
+  // Settings has a layout of its own (its own section menu, "Back to app"),
+  // like a desktop app's preferences window -- see settingsShell() below.
+  if (document.body.dataset.layout === "settings") {
+    settingsShell();
+    return;
+  }
+
+  // Six destinations. Settings isn't one of them: it opens from the account
+  // menu on the profile card at the bottom of the sidebar. Email and Features
+  // were folded in elsewhere: sending lives on Applications, the Gmail
+  // connection on Settings, and the sent-email log on Reports.
   const NAV = [
     { page: "dashboard", href: "index.html", icon: "home", label: "Home" },
     { page: "search", href: "search.html", icon: "explore", label: "Search" },
@@ -17,8 +25,19 @@
     { page: "cv", href: "cv.html", icon: "description", label: "CV" },
     { page: "profile", href: "profile.html", icon: "person", label: "Profile" },
     { page: "reports", href: "reports.html", icon: "insights", label: "Reports" },
-    { page: "settings", href: "settings.html", icon: "tune", label: "Settings" },
   ];
+
+  const HELP_URL = "https://github.com/alymaklad/Saei#readme";
+  const menuItem = (href, icon, label, extra = "") => `
+    <a href="${href}" role="menuitem" ${extra}
+       class="flex items-center gap-space-sm px-space-md py-2.5 text-label-md text-on-surface transition-colors hover:bg-surface-container-low">
+      <span class="ms text-[20px] text-on-surface-variant">${icon}</span>${label}
+    </a>`;
+  const ACCOUNT_MENU = `
+    ${menuItem("profile.html", "account_circle", "Profile")}
+    ${menuItem("settings.html", "settings", "Settings")}
+    <div class="my-1 border-t border-surface-container"></div>
+    ${menuItem(HELP_URL, "help", "Help", 'target="_blank" rel="noopener"')}`;
 
   const current = document.body.dataset.page || "";
   const currentItem = NAV.find((n) => n.page === current);
@@ -52,7 +71,13 @@
         </a>
         <nav class="flex flex-col gap-space-xs" aria-label="Main">${navHTML}</nav>
       </div>
-      <a href="profile.html" class="flex items-center justify-between gap-space-sm rounded-lg bg-surface-container-lowest/80 p-space-sm shadow-soft transition-colors hover:bg-surface-container-lowest">
+      <div class="relative">
+      <div id="sa-account-menu" role="menu" hidden
+           class="absolute bottom-full left-0 right-0 mb-space-xs overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lg ring-1 ring-surface-container">
+        ${ACCOUNT_MENU}
+      </div>
+      <button type="button" id="sa-account-btn" aria-haspopup="menu" aria-expanded="false"
+         class="flex w-full items-center justify-between gap-space-sm rounded-lg bg-surface-container-lowest/80 p-space-sm text-left shadow-soft transition-colors hover:bg-surface-container-lowest">
         <div class="flex min-w-0 items-center gap-space-sm">
           <div class="relative flex-shrink-0">
             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-label-sm text-on-primary" id="sa-user-initials">
@@ -67,7 +92,8 @@
           </div>
         </div>
         <span class="ms text-[18px] text-on-surface-variant">unfold_more</span>
-      </a>
+      </button>
+      </div>
     </aside>`;
 
   const header = `
@@ -113,6 +139,20 @@
     </footer>`);
   document.body.insertAdjacentHTML("afterbegin", sidebar);
 
+  // ---- account menu: the profile card opens Profile / Settings / Help ----
+  const accountBtn = document.getElementById("sa-account-btn");
+  const accountMenu = document.getElementById("sa-account-menu");
+  function setMenu(open) {
+    accountMenu.hidden = !open;
+    accountBtn.setAttribute("aria-expanded", String(open));
+    if (open) accountMenu.querySelector("a")?.focus();
+  }
+  accountBtn.addEventListener("click", (e) => { e.stopPropagation(); setMenu(accountMenu.hidden); });
+  document.addEventListener("click", (e) => { if (!accountMenu.contains(e.target)) setMenu(false); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !accountMenu.hidden) { setMenu(false); accountBtn.focus(); }
+  });
+
   // ---- sidebar user card ----
   // /api/profile re-parses the CV file on every call, so the name/title is
   // cached for the browser session rather than fetched on every page view.
@@ -155,4 +195,105 @@
       }
     } catch (e) { /* card keeps its placeholder */ }
   });
+
+  // ---- Settings: its own window-like layout -------------------------------------
+  //
+  // Each settings section in settings.html is an element with
+  // data-settings-panel="key" plus data-title / data-icon / data-group. This
+  // builds the left menu from them and shows one at a time, chosen by the URL
+  // hash (settings.html#email), so a section can be linked to directly.
+  function settingsShell() {
+    const main = document.getElementById("page");
+    const panels = [...main.querySelectorAll("[data-settings-panel]")];
+    const ALIASES = { channels: "email", llm: "model" };   // older links
+
+    // "Back to app" returns where you came from, if that was a page of Sa'ei.
+    let back = "index.html";
+    try {
+      const ref = new URL(document.referrer);
+      if (ref.origin === location.origin && !ref.pathname.endsWith("settings.html")) back = ref.pathname + ref.search;
+    } catch (e) { /* no referrer: Home */ }
+
+    const groups = [];
+    panels.forEach((panel) => {
+      const name = panel.dataset.group || "";
+      let group = groups.find((g) => g.name === name);
+      if (!group) groups.push(group = { name, panels: [] });
+      group.panels.push(panel);
+    });
+    const navHTML = groups.map((g) => `
+      <div class="mt-space-md first:mt-0" data-settings-group>
+        <p class="px-space-sm pb-1 text-label-sm normal-case tracking-normal text-on-surface-variant">${g.name}</p>
+        ${g.panels.map((p) => `
+          <a href="#${p.dataset.settingsPanel}" data-settings-link="${p.dataset.settingsPanel}"
+             class="flex items-center gap-space-sm rounded-lg px-space-sm py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container">
+            <span class="ms text-[20px] text-on-surface-variant">${p.dataset.icon || "settings"}</span>${p.dataset.title}
+          </a>`).join("")}
+      </div>`).join("");
+
+    document.body.insertAdjacentHTML("afterbegin", `
+      <aside class="fixed left-0 top-0 z-40 flex h-screen w-72 flex-col gap-space-md border-r border-surface-container bg-surface-container-low/70 p-space-md backdrop-blur-xl">
+        <a href="${back}" class="flex items-center gap-space-sm rounded-lg px-space-sm py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container">
+          <span class="ms text-[20px]">arrow_back</span>Back to app
+        </a>
+        <label class="flex items-center gap-space-sm rounded-full bg-surface-container px-space-md py-2 text-on-surface-variant">
+          <span class="ms text-[18px]">search</span>
+          <input type="search" id="settings-search" placeholder="Search" aria-label="Search settings"
+                 class="w-full bg-transparent text-label-md text-on-surface outline-none placeholder:text-on-surface-variant">
+        </label>
+        <nav class="flex flex-col overflow-y-auto" aria-label="Settings">${navHTML}</nav>
+      </aside>`);
+
+    const column = document.createElement("div");
+    column.className = "min-h-screen bg-background pl-72";
+    main.parentNode.insertBefore(column, main);
+    column.appendChild(main);
+    main.classList.add("mx-auto", "max-w-3xl", "px-space-lg", "py-space-xl");
+    main.insertAdjacentHTML("afterbegin", '<h1 class="mb-space-lg text-headline-lg text-on-surface" id="settings-title">Settings</h1>');
+
+    const links = [...document.querySelectorAll("[data-settings-link]")];
+    const saveBar = document.getElementById("settings-save-bar");
+    function show(key) {
+      key = ALIASES[key] || key;
+      const panel = panels.find((p) => p.dataset.settingsPanel === key) || panels[0];
+      panels.forEach((p) => { p.hidden = p !== panel; });
+      links.forEach((a) => {
+        const on = a.dataset.settingsLink === panel.dataset.settingsPanel;
+        a.classList.toggle("bg-surface-container", on);
+        a.classList.toggle("font-semibold", on);
+        if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      });
+      document.getElementById("settings-title").textContent = panel.dataset.title;
+      document.title = `Sa'ei — Settings · ${panel.dataset.title}`;
+      if (saveBar) saveBar.classList.toggle("hidden", !("saves" in panel.dataset));
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+    show(location.hash.slice(1));
+
+    // Search: narrows the menu to sections whose title or contents mention
+    // the words typed; Enter opens the first match.
+    const search = document.getElementById("settings-search");
+    const matches = () => {
+      const words = search.value.toLowerCase().split(/\s+/).filter(Boolean);
+      return links.filter((a) => {
+        const panel = panels.find((p) => p.dataset.settingsPanel === a.dataset.settingsLink);
+        const text = `${a.textContent} ${panel.textContent}`.toLowerCase();
+        return words.every((w) => text.includes(w));
+      });
+    };
+    search.addEventListener("input", () => {
+      const hits = matches();
+      links.forEach((a) => a.classList.toggle("hidden", !hits.includes(a)));
+      document.querySelectorAll("[data-settings-group]").forEach((g) => {
+        g.classList.toggle("hidden", ![...g.querySelectorAll("[data-settings-link]")]
+          .some((a) => !a.classList.contains("hidden")));
+      });
+    });
+    search.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const first = matches()[0];
+      if (first) location.hash = first.dataset.settingsLink;
+    });
+  }
 })();

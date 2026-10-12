@@ -395,7 +395,7 @@ function openSend(a) {
     ${cvUrl ? `<a href="${API_BASE}${cvUrl}" target="_blank" rel="noopener" class="text-label-md text-primary hover:underline">Preview</a>` : ""}`;
   const warn = document.getElementById("gmail-warning");
   if (gmail && !gmail.authenticated) {
-    warn.innerHTML = `Gmail isn't connected yet, so this can't be sent. Connect it under <a class="underline" href="settings.html#channels">Settings → Notifications &amp; channels</a>.`;
+    warn.innerHTML = `Gmail isn't connected yet, so this can't be sent. Connect it under <a class="underline" href="settings.html#email">Settings → Email &amp; reports</a>.`;
     warn.classList.remove("hidden");
   } else {
     warn.classList.add("hidden");

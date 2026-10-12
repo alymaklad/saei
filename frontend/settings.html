@@ -8,16 +8,12 @@
 <link rel="stylesheet" href="style.css">
 <link rel="icon" type="image/png" href="assets/saei-logo.png">
 </head>
-<body data-page="settings">
+<body data-page="settings" data-layout="settings">
 <main id="page">
-  <div class="flex max-w-4xl flex-col">
-    <div class="mb-space-xl">
-      <h1 class="text-headline-lg text-on-surface">Settings</h1>
-      <p class="mt-1 text-body-md text-on-surface-variant">Manage your companion's model, autonomy, thresholds, and notification channels. Saved to <code>.env</code> on this machine.</p>
-    </div>
+  <div class="flex flex-col">
 
     <!-- ============ AI provider ============ -->
-    <section class="mb-space-xl" id="llm">
+    <section id="llm" data-settings-panel="model" data-group="Assistant" data-icon="neurology" data-title="AI model" data-saves>
       <div class="mb-space-md flex items-end justify-between gap-space-md">
         <div>
           <h2 class="text-headline-sm text-on-surface">AI Provider &amp; Model Architecture</h2>
@@ -128,10 +124,9 @@
       </form>
     </section>
 
-    <hr class="mb-space-xl border-surface-container-high">
 
     <!-- ============ Autonomy ============ -->
-    <form id="auto-apply-form" class="mb-space-xl">
+    <form id="auto-apply-form" data-settings-panel="autonomy" data-group="Assistant" data-icon="smart_toy" data-title="Autonomy" data-saves>
       <div class="mb-space-md flex items-end justify-between gap-space-md" id="autonomy">
         <div>
           <h2 class="text-headline-sm text-on-surface">Application Protocol &amp; Autonomy</h2>
@@ -221,10 +216,9 @@
       </div>
     </form>
 
-    <hr class="mb-space-xl border-surface-container-high">
 
     <!-- ============ Matching ============ -->
-    <form id="matching-form" class="mb-space-xl">
+    <form id="matching-form" data-settings-panel="matching" data-group="Assistant" data-icon="tune" data-title="Matching" data-saves>
       <div class="mb-space-md flex items-end justify-between gap-space-md" id="matching">
         <div>
           <h2 class="text-headline-sm text-on-surface">Matching Criteria &amp; Thresholds</h2>
@@ -313,10 +307,9 @@
       </details>
     </form>
 
-    <hr class="mb-space-xl border-surface-container-high">
 
     <!-- ============ Channels ============ -->
-    <section class="mb-space-xl" id="channels">
+    <section id="channels" data-settings-panel="email" data-group="Connections" data-icon="mail" data-title="Email &amp; reports">
       <div class="mb-space-md">
         <h2 class="text-headline-sm text-on-surface">Notifications &amp; Channels</h2>
         <p class="text-body-sm text-on-surface-variant">Where reports go, and the account applications are sent from. No spam.</p>
@@ -345,6 +338,7 @@
             <p class="mt-1 text-body-sm" id="connect-message"></p>
             <p class="mt-space-sm text-body-sm text-on-surface-variant">Opens Google's sign-in in a new tab: pick your account, then allow Sa'ei to send email as you. Sa'ei can only send — it can't read your inbox.</p>
           </div>
+        </div>
 
         <!-- Reports -->
         <div class="flex items-start gap-space-md rounded-lg bg-surface-container-lowest p-space-md shadow-soft">
@@ -365,7 +359,31 @@
       </div>
     </section>
 
-    <div class="flex items-center justify-end gap-space-lg border-t border-surface-container-high pt-space-lg">
+    <!-- ============ Help ============ -->
+    <section id="help" data-settings-panel="help" data-group="Sa'ei" data-icon="help" data-title="Help &amp; about">
+      <div class="mb-space-md">
+        <h2 class="text-headline-sm text-on-surface">Help &amp; about</h2>
+        <p class="text-body-sm text-on-surface-variant">Guides, the source code, and where settings are kept.</p>
+      </div>
+      <div class="divide-y divide-surface-container overflow-hidden rounded-lg bg-surface-container-lowest shadow-soft">
+        <a class="flex items-center justify-between gap-space-md p-space-md hover:bg-surface-container-low" href="https://github.com/alymaklad/Saei#readme" target="_blank" rel="noopener">
+          <span><span class="block text-label-md font-semibold text-on-surface">User guide</span><span class="text-body-sm text-on-surface-variant">Getting started, job sources, Gmail, and how scoring works</span></span>
+          <span class="ms text-[18px] text-on-surface-variant">open_in_new</span>
+        </a>
+        <a class="flex items-center justify-between gap-space-md p-space-md hover:bg-surface-container-low" href="https://github.com/alymaklad/Saei/issues" target="_blank" rel="noopener">
+          <span><span class="block text-label-md font-semibold text-on-surface">Report a problem</span><span class="text-body-sm text-on-surface-variant">Open an issue on GitHub</span></span>
+          <span class="ms text-[18px] text-on-surface-variant">open_in_new</span>
+        </a>
+        <div class="flex items-center justify-between gap-space-md p-space-md">
+          <span><span class="block text-label-md font-semibold text-on-surface">Where settings live</span><span class="text-body-sm text-on-surface-variant">Saved to <code>.env</code> in the Sa'ei folder on this computer. Nothing leaves it except what you send.</span></span>
+        </div>
+        <div class="flex items-center justify-between gap-space-md p-space-md">
+          <span><span class="block text-label-md font-semibold text-on-surface">License</span><span class="text-body-sm text-on-surface-variant">MIT — free to use and change</span></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-space-xl flex items-center justify-end gap-space-lg border-t border-surface-container-high pt-space-lg" id="settings-save-bar">
       <span class="mr-auto text-body-sm text-on-surface-variant">The scheduler is a separate process — restart it (<code>run.bat</code>) to pick up changes.</span>
       <button type="button" class="text-label-md text-on-surface-variant hover:text-on-surface" onclick="location.reload()">Discard changes</button>
       <button type="button" class="sa-btn-primary" id="save-all"><span class="ms text-[18px]">save</span>Save Changes</button>
