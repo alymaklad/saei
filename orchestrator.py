@@ -132,17 +132,26 @@ def _tailoring_profile(state: State) -> dict | None:
 
 
 def rewrite_node(state: State) -> State:
-    missing = state["ats_result"]["missing_skills"]
+    from agents.tailoring import tailor
+
     job_description = state["job"].get("description", "")
     # A document dict, not text -- the layout is applied by cv_render from the
-    # structured result. render_cv_text() flattens it for rescoring and for
-    # anything that stores or displays the CV as text, and passes a plain
-    # string straight through, which is what keeps the degraded path working.
-    document = rewrite_cv(state["cv_text"], job_description, missing,
-                          profile=_tailoring_profile(state),
-                          requirement_results=state["ats_result"].get("requirement_results"),
-                          required_skills=state["ats_result"].get("required_skills"))
-    rewritten = render_cv_text(document)
+    # structured result. tailor() rewrites, re-scores, and puts original lines
+    # back (or keeps the CV as it is) whenever the rewrite would score LOWER
+    # than the CV it was made from -- see agents/tailoring.py.
+    #
+    # The re-score reuses the extracted requirements and reads evidence from
+    # the rewritten text; see _rescore_kwargs for why getting that wrong is
+    # invisible -- the score still comes out, it just quietly costs an extra
+    # large LLM call.
+    outcome = tailor(
+        state["cv_text"], job_description, state["ats_result"], _tailoring_profile(state),
+        rescore=lambda text: compute_ats_score(
+            text, job_description, **_rescore_kwargs(state["ats_result"], text)),
+        rewrite=rewrite_cv,
+    )
+    document = outcome["document"]
+    rewritten = outcome["text"]
     state["cv_rewritten"] = rewritten
 
     job_id = state["job"].get("id", "job")
@@ -150,15 +159,7 @@ def rewrite_node(state: State) -> State:
     save_cv_as_pdf(document, out_path)
     state["cv_path"] = out_path
 
-    # Re-score the tailored text against the same job description so the user
-    # can see the score actually moved, not just trust that a rewrite
-    # happened. See _rescore_kwargs for what is reused and why getting it
-    # wrong is invisible -- the score still comes out, it just quietly costs
-    # an extra large LLM call.
-    tailored_ats_result = compute_ats_score(
-        rewritten, job_description,
-        **_rescore_kwargs(state["ats_result"], rewritten),
-    )
+    tailored_ats_result = outcome["result"]
     state["tailored_ats_result"] = tailored_ats_result
     explanation = build_improvement_explanation(state["ats_result"], tailored_ats_result)
 

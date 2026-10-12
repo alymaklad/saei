@@ -467,6 +467,7 @@ def debug_ats(body: AtsDebugRequest):
         compute_ats_compatibility,
     )
     from agents.cv_rewriter_agent import rewrite_cv, render_cv_text, save_cv_as_pdf
+    from agents.tailoring import tailor
     from agents.llm import describe_llm_error
 
     jd = (body.job_description or "").strip()
@@ -550,48 +551,23 @@ def debug_ats(body: AtsDebugRequest):
         # Everything factual in the tailored CV comes from it -- see
         # cv_rewriter_agent.build_document.
         tailoring_profile = stored_profile or ats.get("cv_profile")
-        # The scoring pass's own per-requirement verdict goes in with it: it is
-        # what tells the rewrite which of the job's words this CV has already
-        # earned but not yet used. See agents/cv_targeting.py.
-        document = rewrite_cv(cv_text, jd, ats["missing_skills"],
-                              profile=tailoring_profile,
-                              requirement_results=ats.get("requirement_results"),
-                              required_skills=ats.get("required_skills"))
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(502, f"CV rewrite failed: {describe_llm_error(exc)}") from exc
-    # Rescoring, the debug pane and anything that stores the CV all want text;
-    # the PDF wants the document. A plain string (the degraded path) passes
-    # through render_cv_text unchanged.
-    tailored = render_cv_text(document)
-    timings["rewrite"] = round(time.perf_counter() - started, 2)
+        # Reuse the already-extracted requirements, exactly as orchestrator.py
+        # does, and score the rewrite WITHOUT re-parsing it: evidence is read
+        # structurally from the new text. That keeps the bench's cost equal to
+        # the real path's, and off Groq's 8,000-tokens-per-minute cliff.
+        extra = {"profile": ats["cv_profile"]} if ats.get("cv_profile") else {}
 
-    started = time.perf_counter()
-    # Reuse the already-extracted requirements, exactly as orchestrator.py does
-    # -- otherwise the bench would cost an extra LLM call the real path
-    # doesn't, and its timings would misrepresent production cost. The
-    # requirements engine reuses the whole structured extraction (categories
-    # and importance included), not just a list of names, so the before/after
-    # comparison is scored against an identical rubric.
-    reuse = ats.get("requirements")
-    # Score the rewrite WITHOUT re-parsing it. The profile is already known,
-    # and the no-fabrication rule means the rewrite cannot change the dates it
-    # supplies; evidence is read structurally from the new text instead. That
-    # removes the second large LLM call of the run -- which is where this
-    # endpoint was failing outright on Groq's 8,000-tokens-per-minute free
-    # tier, after the expensive rewrite had already succeeded and been paid for.
-    extra = {"evidence_text": tailored}
-    if ats.get("cv_profile"):
-        extra["profile"] = ats["cv_profile"]
-    try:
-        tailored_ats = compute_ats_score(tailored, jd, required_skills=reuse, **extra)
+        def rescore(text):
+            return compute_ats_score(text, jd, required_skills=ats.get("requirements"),
+                                     evidence_text=text, **extra)
+
+        # Rewrites, re-scores, and puts original lines back -- or keeps the CV
+        # as it is -- when the rewrite would score lower. See agents/tailoring.py.
+        outcome = tailor(cv_text, jd, ats, tailoring_profile, rescore, rewrite=rewrite_cv)
     except Exception as exc:  # noqa: BLE001
-        # Deliberately NOT a bare re-raise: an uncaught exception here returns
-        # a 500 with no body, discarding a tailored CV that just cost a full
-        # rewrite. Report what actually failed instead -- the previous message
-        # said "CV rewrite failed" for errors raised well after the rewrite.
-        raise HTTPException(502, f"Re-scoring the tailored CV failed: "
-                                 f"{describe_llm_error(exc)}") from exc
-    timings["rescore"] = round(time.perf_counter() - started, 2)
+        raise HTTPException(502, f"Tailoring failed: {describe_llm_error(exc)}") from exc
+    document, tailored, tailored_ats = outcome["document"], outcome["text"], outcome["result"]
+    timings["rewrite_and_rescore"] = round(time.perf_counter() - started, 2)
 
     pdf_path = None
     if body.render_pdf:
