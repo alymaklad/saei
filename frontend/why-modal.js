@@ -80,7 +80,7 @@ function pillarEvidence(key, pillar) {
 //
 // The legacy branch below is kept for reading history, not for scoring. It
 // says so on screen, because those numbers came from a scorer whose defects
-// are the reason it was replaced -- see SCORING.md.
+// are the reason it was replaced -- see docs/scoring.md.
 
 const RELATION_SHORT = {
   exact: "Exact", alias: "Alias", implied: "Prerequisite", subset: "Subset",

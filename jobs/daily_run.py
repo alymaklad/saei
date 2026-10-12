@@ -1,6 +1,6 @@
 """Daily search-and-apply run: search all free sources, dedupe, rank, act.
 
-Pipeline shape (see ARCHITECTURE.md "Job matching"):
+Pipeline shape (see docs/architecture.md "Job matching"):
 
     query expansion -> retrieval (search_agent) -> drop already-known URLs
     -> semantic retrieval path -> ranking -> match-score gate -> orchestrator

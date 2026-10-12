@@ -9,7 +9,7 @@ deterministic relation it must produce with no LLM in the loop.
 
 bench/score_regression.json pins the other half: relations can all be right
 while a weight, a points table or a redistribution rule moves the final
-number. That case is the worked example in MATCHING.md.
+number. That case is the worked example in docs/matching.md.
 
 `bench/report.py` computes precision, recall and fallback rates from the same
 files; these tests are the pass/fail gate, that is the measurement.

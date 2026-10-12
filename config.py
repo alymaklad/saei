@@ -144,7 +144,7 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 # (1,000/day once you've bought $10 of credits). This project's orchestrator
 # spends roughly 2-3 LLM calls per job that clears the match gate, so 50/day
 # is on the order of ~15-20 jobs. Paid model ids (no ":free" suffix) have no
-# such request cap. See README "Enabling auto-submit"/LLM notes.
+# such request cap. See docs/setup.md "Enabling auto-submit".
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 # Free model ids come and go -- if this one 404s, pick another from
 # https://openrouter.ai/models?q=free and set it in Settings.
@@ -298,7 +298,7 @@ FIT_THRESHOLD = _float("FIT_THRESHOLD", 0.7)
 # ---- Job matching: query expansion, embeddings, ranking ---------------------
 #
 # These drive the two-stage retrieve-then-rank matching pipeline (see
-# ARCHITECTURE.md "Job matching"). Retrieval is deliberately recall-biased
+# docs/architecture.md "Job matching"). Retrieval is deliberately recall-biased
 # (cheap signals, don't drop anything plausible); ranking does the deeper
 # per-job analysis on the already-narrowed candidate pool.
 

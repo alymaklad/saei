@@ -2,7 +2,7 @@
   "_about": [
     "End-to-end score regression. Every figure here was produced by",
     "compute_requirements_score() with the entailment call disabled, and is the",
-    "same worked example documented in MATCHING.md.",
+    "same worked example documented in docs/matching.md.",
     "",
     "This exists because the per-case file above pins relations, not arithmetic.",
     "A change that leaves every relation correct and still moves the final",

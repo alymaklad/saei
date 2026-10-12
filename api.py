@@ -80,7 +80,7 @@ app.add_middleware(
 # when APP_PASSWORD is set. Basic rather than a token because the browser
 # then sends it on everything by itself: fetch() calls, and also the plain
 # <a href> links that open a CV PDF, which a token header could never reach.
-# Only safe over HTTPS, which every hosting route in the README provides.
+# Only safe over HTTPS, which every hosting route in docs/deployment.md provides.
 # /api/health stays open so an uptime check doesn't need the password.
 
 def _credentials_match(header: str) -> bool:

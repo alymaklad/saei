@@ -1,7 +1,7 @@
 # Architecture
 
 Technical deep-dive into how the Job Application Agent actually works under
-the hood — one level below the [README](README.md), which covers setup and
+the hood — one level below the [README](../README.md), which covers setup and
 usage. This document exists to explain the code itself: what each module in
 `agents/` and `jobs/` does, how they call each other, and how a job posting
 gets from "found on the internet" to "sitting in the database as a scored,
@@ -263,7 +263,7 @@ mutates it, and returns it.
   `agents.apply_agent.auto_submit_greenhouse()` — which is a deliberate
   stub that raises `NotImplementedError` until someone hand-verifies a
   specific board's form fields and implements the real submit payload (see
-  [Enabling auto-submit](README.md#enabling-auto-submit) in the README).
+  [Enabling auto-submit](setup.md#enabling-auto-submit) in the setup guide).
   Reaching this node at all already implies `decide_apply_path` approved it
   — `config.AUTO_APPLY_MODE` is `"any"`, or is `"whitelist"` and the source
   is in `WHITELISTED_SOURCES`.
@@ -805,7 +805,7 @@ Two consequences live outside `ats_agent.py`:
   reasoning that an unreachable threshold reproduces existing behaviour while
   a too-low one starts auto-applying to mismatched jobs.
 
-See [SCORING.md](SCORING.md) for the full pipeline, the credit/weight tables,
+See [scoring.md](scoring.md) for the full pipeline, the credit/weight tables,
 and a worked example on a real posting from the database.
 
 ### `agents/cv_rewriter_agent.py` — tailoring the CV for low-fit jobs

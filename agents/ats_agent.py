@@ -22,7 +22,7 @@ defects the numbers made unarguable: formatting and section completeness
 returned the same value on every job (a constant carrying 40% of the weight
 and zero ranking signal), and years of experience were read as
 max(year) - min(year) over every number in the CV, which scores a graduation
-year and a copyright notice as employment. SCORING.md keeps the measurements;
+year and a copyright notice as employment. docs/scoring.md keeps the measurements;
 the code is gone rather than sitting unreachable.
 
 What is kept from the original design, deliberately: every score carries a
@@ -195,7 +195,7 @@ def compute_ats_score(cv_text: str, job_description: str,
     requirements engine had replaced it everywhere, and its two structural
     defects -- a constant 40% of every score carrying no ranking signal, and
     years of experience read as max(year) - min(year) -- are recorded in
-    SCORING.md rather than in code nothing calls.
+    docs/scoring.md rather than in code nothing calls.
 
     `required_skills` accepts an already-extracted requirements dict, so
     re-scoring a tailored CV reuses the extraction rather than paying for it
