@@ -273,7 +273,7 @@ from any static server). It talks to the FastAPI backend in `api.py`, and its de
 | **Applications** | Every application, filterable, with a detail panel: match affinity, the factors behind it, ATS evidence — and **Submit Application**, which sends the email from your Gmail |
 | **CV** | Master CV (view, download, replace), every tailored CV with its before → after ATS score, and the **ATS & tailoring bench**: paste a job description and see the score and rewrite without saving anything |
 | **Profile** | The extracted profile every agent reads, in sections that open one at a time; reorder them (tailored CVs follow the order) or add your own |
-| **Reports** | Headline numbers, a plain-language momentum summary, skill-gap bars, where roles come from, the latest news digest, and every dispatch (report emails and application emails) |
+| **Reports** | One column, read top to bottom: the headline numbers as a sentence, the skills that would open the most doors, where your roles come from, this week's news, and everything Sa'ei sent |
 | **Settings** | Opened from the profile card at the bottom of the sidebar (Profile · Settings · Help). Its own menu of sections: AI model, autonomy, matching thresholds, email & reports, and help (Gmail sign-in, where reports are emailed; Gmail connection) |
 
 Styling uses Tailwind, shipped **pre-compiled** as `frontend/tailwind.css`,

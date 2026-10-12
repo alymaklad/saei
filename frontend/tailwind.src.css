@@ -177,4 +177,75 @@
   .sa-msg { @apply text-label-md font-medium text-on-surface-variant; }
   .sa-msg.save-success { @apply text-secondary; }
   .sa-msg.save-error { @apply text-error; }
+
+  /* ---- reports: one reading column ---- */
+  .rp { @apply max-w-[56rem]; }
+  .rp-open { @apply relative overflow-hidden pb-space-xl; }
+  .rp-title { @apply relative text-label-lg font-semibold text-on-surface-variant; }
+  /* The one loud element: the numbers, said as a sentence. */
+  .rp-lede { @apply relative mt-space-sm max-w-[21ch] text-[44px] font-semibold leading-[1.12] tracking-[-0.03em] text-on-surface-variant md:max-w-[25ch] md:text-[52px]; text-wrap: balance; font-variant-numeric: tabular-nums; }
+  .rp-lede b { @apply font-bold text-on-surface; }
+  .rp-lede .rp-hot { @apply text-primary; }
+  .rp-summary { @apply relative mt-space-lg max-w-[64ch] text-body-lg text-on-surface-variant; }
+  .rp-summary strong { @apply font-semibold text-on-surface; }
+
+  .rp-section { @apply border-t border-surface-container-high py-space-xl; }
+  .rp-head { @apply mb-space-lg; }
+  .rp-head h2 { @apply text-headline-md text-on-surface; }
+  .rp-head p { @apply mt-1 max-w-[64ch] text-body-md text-on-surface-variant; }
+  .rp-head-row { @apply flex flex-wrap items-end justify-between gap-space-md; }
+
+  /* skill bars: name | bar | count, aligned on one grid */
+  .rp-bars { @apply flex flex-col gap-space-md; }
+  .rp-bar { display: grid; grid-template-columns: minmax(8rem, 13rem) 1fr 7.5rem; @apply items-center gap-space-md; }
+  .rp-bar-name { @apply truncate text-label-lg text-on-surface; }
+  .rp-bar-track { @apply h-2.5 overflow-hidden rounded-full bg-surface-container-high; }
+  .rp-bar-fill { @apply h-full rounded-full bg-primary; transform-origin: left; }
+  .rp-bar:not(:first-child) .rp-bar-fill { @apply bg-primary-container/70; }
+  .rp-bar-count { @apply text-right text-body-sm text-on-surface-variant; font-variant-numeric: tabular-nums; }
+  .rp-bar-count b { @apply font-semibold text-on-surface; }
+  .rp-note { @apply mt-space-lg max-w-[64ch] text-body-sm text-on-surface-variant; }
+  .rp-note a, .rp-news a { @apply font-semibold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary; }
+
+  /* sources: one stacked bar across the column */
+  .rp-stack { @apply flex h-9 w-full overflow-hidden rounded-lg bg-surface-container-high; }
+  .rp-stack > span { @apply h-full; }
+  .rp-stack > span + span { box-shadow: inset 2px 0 0 #fdf9f2; }
+  .rp-legend { @apply mt-space-md flex flex-wrap gap-x-space-lg gap-y-space-sm text-body-sm text-on-surface-variant; }
+  .rp-legend li { @apply flex items-center gap-2; }
+  .rp-legend i { @apply inline-block h-2.5 w-2.5 rounded-sm; }
+  .rp-legend b { @apply font-semibold text-on-surface; font-variant-numeric: tabular-nums; }
+
+  /* news */
+  .rp-news { @apply flex flex-col gap-space-md; }
+  .rp-news li { @apply max-w-[66ch] border-l-2 border-primary-fixed pl-space-md text-body-md text-on-surface; }
+  .rp-news li span { @apply mt-0.5 block text-body-sm text-on-surface-variant; }
+  .rp-boards { @apply mt-space-lg grid gap-space-sm sm:grid-cols-2; }
+  .rp-boards a { @apply block rounded-lg bg-surface-container-low px-space-md py-space-sm text-label-md text-on-surface no-underline hover:bg-surface-container; }
+  .rp-boards a span { @apply mt-0.5 block text-body-sm font-normal text-on-surface-variant; }
+
+  /* the log: date in the gutter, then what was sent */
+  .rp-log { @apply flex flex-col; }
+  .rp-log > li:not(.sa-empty) { display: grid; grid-template-columns: 5.5rem 1fr; @apply gap-space-md border-b border-surface-container py-space-md; }
+  .rp-log time { @apply pt-0.5 text-body-sm text-on-surface-variant; font-variant-numeric: tabular-nums; }
+  .rp-log h3 { @apply text-label-lg font-semibold text-on-surface; }
+  .rp-log .rp-meta { @apply text-body-sm text-on-surface-variant; }
+  .rp-log .rp-failed { @apply font-semibold text-error; }
+  .rp-log summary { @apply mt-1 inline-flex cursor-pointer list-none items-center gap-1 text-label-md text-primary hover:underline; }
+  .rp-log pre { @apply mt-space-sm max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-container-low p-space-md font-sans text-body-sm text-on-surface-variant; }
+
+  @media (max-width: 640px) {
+    .rp-bar { grid-template-columns: 1fr auto; }
+    .rp-bar-track { grid-column: 1 / -1; grid-row: 2; }
+    .rp-log > li:not(.sa-empty) { grid-template-columns: 1fr; gap: 0.25rem; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rp-bar-fill { animation: rp-grow 700ms cubic-bezier(.2,.7,.2,1) both; }
+    .rp-bar:nth-child(2) .rp-bar-fill { animation-delay: 60ms; }
+    .rp-bar:nth-child(3) .rp-bar-fill { animation-delay: 120ms; }
+    .rp-bar:nth-child(4) .rp-bar-fill { animation-delay: 180ms; }
+    .rp-bar:nth-child(5) .rp-bar-fill { animation-delay: 240ms; }
+    .rp-bar:nth-child(6) .rp-bar-fill { animation-delay: 300ms; }
+  }
+  @keyframes rp-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 }

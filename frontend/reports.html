@@ -8,116 +8,69 @@
 <link rel="stylesheet" href="style.css">
 <link rel="icon" type="image/png" href="assets/saei-logo.png">
 </head>
-<body data-page="reports" data-footer="Daily summary at 20:00 · news digest Mondays at 9:00 · both need the scheduler running">
+<body data-page="reports" data-footer="Daily summary at 20:00 and The Sa'ei Weekly on Mondays at 9:00, while Sa'ei is running">
 <main id="page">
-  <div class="flex flex-col">
-    <div class="mb-space-xl flex items-end justify-between gap-space-lg">
-      <div>
-        <h1 class="sa-page-title">Career Reports</h1>
-        <p class="sa-page-desc">A calm synthesis of your market reach, application momentum, and skill demand.</p>
-      </div>
-      <!-- <button type="button" class="sa-btn-primary" onclick="window.print()"><span class="ms text-[18px]">download</span>Export PDF</button> -->
-    </div>
+  <!-- One reading column: the report reads top to bottom like a letter,
+       from the headline numbers down to what Sa'ei sent. -->
+  <article class="rp">
 
-    <!-- Stats -->
-    <section class="sa-card mb-space-xl grid grid-cols-4 divide-x divide-surface-container p-0">
-      <div class="p-space-lg">
-        <div class="flex items-center justify-between text-label-sm uppercase tracking-wider text-on-surface-variant"><span>Opportunities</span><span class="normal-case tracking-normal text-outline">all time</span></div>
-        <p class="mt-space-sm flex items-center gap-1 text-display-lg-mobile text-on-surface"><span id="stat-jobs">&mdash;</span><span class="ms text-[20px] text-tertiary">travel_explore</span></p>
-        <p class="text-body-sm text-on-surface-variant" id="stat-jobs-sub"></p>
+    <!-- Opening: the numbers as a sentence -->
+    <header class="rp-open">
+      <h1 class="rp-title">Career report</h1>
+      <p class="rp-lede" id="lede" aria-live="polite">Reading your search&hellip;</p>
+      <p class="rp-summary" id="momentum"></p>
+    </header>
+
+    <!-- Skills -->
+    <section class="rp-section" aria-labelledby="skills-h">
+      <div class="rp-head">
+        <h2 id="skills-h">Skills that would open the most doors</h2>
+        <p id="gaps-intro">Requirements your profile doesn't show yet, by how many of your roles ask for them.</p>
       </div>
-      <div class="p-space-lg">
-        <div class="flex items-center justify-between text-label-sm uppercase tracking-wider text-on-surface-variant"><span>High affinity</span><span class="normal-case tracking-normal text-primary">&ge;80%</span></div>
-        <p class="mt-space-sm flex items-center gap-1 text-display-lg-mobile text-primary"><span id="stat-high">&mdash;</span><span class="ms text-[20px]">verified</span></p>
-        <p class="text-body-sm text-on-surface-variant">Roles matched at 80% or better</p>
-      </div>
-      <div class="p-space-lg">
-        <div class="flex items-center justify-between text-label-sm uppercase tracking-wider text-on-surface-variant"><span>Review queue</span><span class="normal-case tracking-normal text-tertiary">drafted</span></div>
-        <p class="mt-space-sm flex items-center gap-1 text-display-lg-mobile text-on-surface"><span id="stat-queue">&mdash;</span><span class="ms text-[20px] text-tertiary">mark_email_unread</span></p>
-        <p class="text-body-sm text-on-surface-variant">Applications ready for you to send</p>
-      </div>
-      <div class="p-space-lg">
-        <div class="flex items-center justify-between text-label-sm uppercase tracking-wider text-on-surface-variant"><span>Skills identified</span><span class="normal-case tracking-normal text-on-surface">high leverage</span></div>
-        <p class="mt-space-sm flex items-center gap-1 text-display-lg-mobile text-on-surface"><span id="stat-gaps">&mdash;</span><span class="ms text-[20px] text-tertiary">school</span></p>
-        <p class="text-body-sm text-on-surface-variant" id="stat-gaps-sub"></p>
-      </div>
+      <ol class="rp-bars" id="skill-gaps-list"><li class="sa-empty">Loading&hellip;</li></ol>
+      <p class="rp-note">
+        Used one of these in a job or project? Add it to that entry on your
+        <a href="profile.html">profile</a> and it counts the next time roles are scored.
+      </p>
     </section>
 
-    <!-- Editorial synthesis -->
-    <section class="relative mb-space-xl overflow-hidden rounded-xl bg-surface-container-low p-space-xl shadow-sm">
-      <!-- As in the design: a soft warm glow top-right, and the word sa'i
-           (striving) set bold in primary at 10% opacity, fully inside the
-           card's bottom-right corner. -->
-      <div class="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-secondary-container/40 blur-3xl"></div>
-      <div class="pointer-events-none absolute bottom-12 right-0 select-none pr-space-lg opacity-10" aria-hidden="true">
-        <span class="block text-[140px] font-bold leading-none text-primary" lang="ar">سعي</span>
+    <!-- Sources -->
+    <section class="rp-section" aria-labelledby="sources-h">
+      <div class="rp-head">
+        <h2 id="sources-h">Where your roles come from</h2>
+        <p id="source-total"></p>
       </div>
-      <div class="relative max-w-3xl">
-        <span class="sa-eyebrow mb-space-sm text-primary"><span class="ms text-[16px]">lightbulb</span>Editorial synthesis</span>
-        <h2 class="mb-space-md text-headline-lg text-on-surface">Your Career Momentum</h2>
-        <p class="text-body-lg text-on-surface-variant" id="momentum">Loading&hellip;</p>
-        <div class="mt-space-lg flex flex-wrap items-center gap-space-md">
-          <button type="button" class="flex items-center gap-1 text-label-md text-primary hover:underline" id="digest-toggle">Read the latest news digest <span class="ms text-[18px]">arrow_forward</span></button>
-          <span class="text-body-sm text-on-surface-variant" id="digest-date"></span>
-        </div>
-        <div class="mt-space-md hidden max-h-96 overflow-y-auto whitespace-pre-wrap rounded-lg bg-surface-container-lowest p-space-md text-body-md text-on-surface-variant" id="news-content"></div>
-      </div>
+      <div class="rp-stack" id="source-bar" role="img" aria-label="Share of roles by source"></div>
+      <ul class="rp-legend" id="source-legend"></ul>
     </section>
 
-    <div class="grid grid-cols-12 items-start gap-space-lg">
-      <!-- Skills -->
-      <div class="col-span-7 flex flex-col gap-space-lg">
+    <!-- News -->
+    <section class="rp-section" aria-labelledby="news-h">
+      <div class="rp-head">
+        <h2 id="news-h">This week's news</h2>
+        <p id="digest-date">From your latest Sa'ei Weekly.</p>
+      </div>
+      <div id="news-body"><p class="sa-empty">Loading&hellip;</p></div>
+    </section>
+
+    <!-- Dispatches -->
+    <section class="rp-section" aria-labelledby="sent-h">
+      <div class="rp-head rp-head-row">
         <div>
-          <div class="flex items-end justify-between">
-            <div>
-              <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Skill intelligence</span>
-              <h2 class="text-headline-md text-on-surface">Market Skill Alignment</h2>
-            </div>
-            <span class="text-label-sm normal-case tracking-normal text-on-surface-variant" id="gaps-chip"></span>
-          </div>
-          <div class="sa-card mt-space-sm">
-            <p class="mb-space-md text-body-md text-on-surface-variant" id="gaps-intro">Skills most often missing across your saved roles, by how many roles asked for them:</p>
-            <ul class="flex flex-col gap-space-md" id="skill-gaps-list">
-              <li class="sa-empty">Loading&hellip;</li>
-            </ul>
-            <a href="profile.html" class="mt-space-lg flex items-center justify-between gap-space-md rounded-lg bg-surface-container-low px-space-md py-space-sm hover:bg-surface-container">
-              <span class="flex items-center gap-2 text-body-sm text-on-surface"><span class="ms text-[18px] text-primary">tune</span>Used one of these in a role or project? Say so where you used it.</span>
-              <span class="flex items-center gap-1 whitespace-nowrap text-label-md text-primary">Update profile <span class="ms text-[16px]">arrow_forward</span></span>
-            </a>
-          </div>
+          <h2 id="sent-h">Sent by Sa'ei</h2>
+          <p>Every report and application email, newest first.</p>
         </div>
-
-        <section class="flex items-center justify-between gap-space-lg rounded-xl bg-surface-container-low p-space-lg">
-          <div>
-            <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Source breakdown</span>
-            <h3 class="text-headline-sm text-on-surface">Where your roles come from</h3>
-            <p class="text-body-sm text-on-surface-variant" id="source-text"></p>
-          </div>
-          <svg viewBox="0 0 42 42" class="h-24 w-24 flex-shrink-0 -rotate-90" id="source-ring" aria-hidden="true"></svg>
-        </section>
+        <div class="sa-tabs" id="dispatch-tabs">
+          <button type="button" class="sa-tab is-active" data-filter="all">All</button>
+          <button type="button" class="sa-tab" data-filter="report">Reports</button>
+          <button type="button" class="sa-tab" data-filter="email">Applications</button>
+        </div>
       </div>
+      <ol class="rp-log" id="reports-list"><li class="sa-empty">Loading&hellip;</li></ol>
+      <button type="button" class="sa-btn-ghost mt-space-sm" id="reports-more" hidden></button>
+    </section>
 
-      <!-- Dispatches -->
-      <div class="col-span-5">
-        <div class="flex items-end justify-between">
-          <div>
-            <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Audit stream</span>
-            <h2 class="text-headline-md text-on-surface">Recent Dispatches</h2>
-          </div>
-          <div class="sa-tabs" id="dispatch-tabs">
-            <button type="button" class="sa-tab is-active" data-filter="all">All</button>
-            <button type="button" class="sa-tab" data-filter="telegram">Reports</button>
-            <button type="button" class="sa-tab" data-filter="email">Email</button>
-          </div>
-        </div>
-        <div class="sa-list mt-space-sm" id="reports-list">
-          <p class="sa-empty">Loading&hellip;</p>
-        </div>
-        <button type="button" class="sa-btn-ghost mt-space-sm" id="reports-more" hidden></button>
-      </div>
-    </div>
-
-  </div>
+  </article>
 </main>
 
 <script src="shell.js"></script>

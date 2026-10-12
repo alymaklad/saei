@@ -1,153 +1,190 @@
-// Reports page: headline numbers, a plain-language summary built from real
-// data, skill gaps, where roles come from, and every dispatch -- emailed reports
-// reports and application emails -- in one stream.
+// Reports page: one reading column. The opening says the headline numbers as
+// a sentence; below it, the skills that would help most, where roles come
+// from, this week's news, and everything Sa'ei sent. Every name and number on
+// the page comes straight from the API.
 
 let apps = [];
 let gaps = [];
 let stats = null;
 let dispatches = [];
 let dispatchFilter = "all";
-const PREVIEW = 5;
+const PREVIEW = 6;
 let expanded = false;
 
-// ---- stats + momentum -------------------------------------------------------
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function listJoin(items) {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-function paintStats() {
-  const sources = new Set(apps.map((a) => a.source).filter(Boolean));
-  if (stats) {
-    document.getElementById("stat-jobs").textContent = stats.total_jobs;
-    document.getElementById("stat-queue").textContent = stats.pending_review;
-  }
-  document.getElementById("stat-jobs-sub").textContent = sources.size
-    ? `Found across ${sources.size} source${sources.size === 1 ? "" : "s"}` : "";
-  document.getElementById("stat-high").textContent = apps.filter((a) => (a.match_score || 0) >= 0.8).length;
-  document.getElementById("stat-gaps").textContent = gaps.length;
-  document.getElementById("stat-gaps-sub").textContent = gaps.length ? listJoin(gaps.slice(0, 2).map((g) => g.skill)) : "None recurring yet";
-}
+// ---- opening ----------------------------------------------------------------
 
-function paintMomentum() {
-  const el = document.getElementById("momentum");
-  if (!apps.length) {
-    el.textContent = "No roles yet. Once a search has run, this summarises where your strongest matches are and which skills would open the most doors.";
+function paintOpening() {
+  const lede = document.getElementById("lede");
+  const summary = document.getElementById("momentum");
+  const found = apps.length;
+  if (!found) {
+    lede.textContent = "No roles yet.";
+    summary.textContent = "Run a search and this report fills in: your strongest matches, the skills that would open the most doors, and everything Sa'ei sends you.";
     return;
   }
-  // Built from the data on this page -- every name and number below is real.
-  const best = sortApplicationsBy(apps, "match_score").filter((a) => a.match_score != null).slice(0, 3);
-  const titles = [...new Set(best.map((a) => a.title).filter(Boolean))];
-  const strong = apps.filter((a) => (a.match_score || 0) >= 0.75).length;
+  const high = apps.filter((a) => (a.match_score || 0) >= 0.8).length;
+  const best = Math.max(0, ...apps.map((a) => a.match_score || 0));
+  const queue = stats ? stats.pending_review : 0;
+  const parts = [
+    `<b>${plural(found, "role")}</b> found.`,
+    high ? `<b>${high}</b> matched 80% or better.` : `Your best match is <b>${Math.round(best * 100)}%</b>.`,
+  ];
+  if (queue) parts.push(`<b class="rp-hot">${queue}</b> ${queue === 1 ? "is" : "are"} drafted and waiting for you.`);
+  lede.innerHTML = parts.join(" ");
+
+  const top = sortApplicationsBy(apps, "match_score").filter((a) => a.match_score != null).slice(0, 3);
+  const titles = [...new Set(top.map((a) => a.title).filter(Boolean))];
   let html = titles.length
-    ? `Your strongest opportunities were roles like ${listJoin(titles.map((t) => `<strong class="text-on-surface">${escapeHtml(t)}</strong>`))}`
-      + ` — ${strong} of ${apps.length} matched at 75% or better.`
-    : `${apps.length} roles found so far.`;
+    ? `Your strongest matches are roles like ${listJoin(titles.map((t) => `<strong>${escapeHtml(t)}</strong>`))}.`
+    : "";
   if (gaps.length) {
     const g = gaps[0];
-    const share = Math.round((g.count / apps.length) * 100);
-    html += ` Demonstrating <strong class="text-on-surface">${escapeHtml(g.skill)}</strong> would credit a requirement in`
-      + ` <span class="text-primary">${g.count} saved role${g.count === 1 ? "" : "s"} (${share}%)</span>`
-      + `${gaps[1] ? `, and ${escapeHtml(gaps[1].skill)} another ${gaps[1].count}` : ""}.`;
+    html += ` Showing <strong>${escapeHtml(g.skill)}</strong> in your experience would meet a requirement in ${plural(g.count, "role")}`
+      + `${gaps[1] ? `, and ${escapeHtml(gaps[1].skill)} in another ${gaps[1].count}` : ""}.`;
   }
-  el.innerHTML = html;
+  summary.innerHTML = html.trim();
 }
 
-// ---- news digest ----------------------------------------------------------------
-
-async function loadNews() {
-  const box = document.getElementById("news-content");
-  const toggle = document.getElementById("digest-toggle");
-  try {
-    const digests = await getJSON("/api/news?limit=1");
-    if (!digests.length) {
-      toggle.hidden = true;
-      document.getElementById("digest-date").textContent = "No news digest yet — the weekly run hasn't happened.";
-      return;
-    }
-    const d = digests[0];
-    box.innerHTML = escapeHtml(d.content).replace(/https?:\/\/[^\s<]+/g, (url) =>
-      `<a class="text-primary underline" href="${url}" target="_blank" rel="noopener">${url.length > 60 ? `${url.slice(0, 57)}…` : url}</a>`);
-    document.getElementById("digest-date").textContent =
-      `${d.field ? d.field + " · " : ""}${d.date_created ? fmtDate(d.date_created) : ""}`;
-    toggle.addEventListener("click", () => box.classList.toggle("hidden"));
-  } catch (e) {
-    toggle.hidden = true;
-  }
-}
-
-// ---- skill gaps ---------------------------------------------------------------------
+// ---- skills ------------------------------------------------------------------
 
 function paintGaps() {
   const list = document.getElementById("skill-gaps-list");
-  document.getElementById("gaps-chip").textContent = gaps.length ? `${gaps.length} key signals detected` : "";
   if (!gaps.length) {
-    list.innerHTML = `<li class="sa-empty">No recurring gaps yet.</li>`;
+    list.innerHTML = `<li class="sa-empty">Nothing recurring yet. Skills appear here once several roles ask for the same thing.</li>`;
     return;
   }
   const base = apps.length || gaps[0].count;
-  const tones = ["bg-primary", "bg-primary-container", "bg-secondary", "bg-secondary-fixed-dim"];
-  list.innerHTML = gaps.slice(0, 6).map((g, i) => {
-    const share = Math.min(100, Math.round((g.count / base) * 100));
+  const top = gaps[0].count;
+  list.innerHTML = gaps.slice(0, 6).map((g) => {
+    const share = Math.round((g.count / base) * 100);
+    const width = Math.max(3, Math.round((g.count / top) * 100));   // longest bar = most-asked skill
     return `
-      <li>
-        <div class="mb-1.5 flex items-center justify-between gap-space-md">
-          <span class="flex items-center gap-2 text-label-md text-on-surface">${escapeHtml(g.skill)}
-            ${i === 0 ? `<span class="rounded bg-tertiary-fixed px-1.5 py-0.5 text-label-sm normal-case tracking-normal text-on-tertiary-fixed-variant">Priority gap</span>` : ""}</span>
-          <span class="font-mono text-body-sm text-on-surface-variant">${g.count} role${g.count === 1 ? "" : "s"} (${share}%)</span>
-        </div>
-        <div class="sa-progress"><div class="${tones[Math.min(i, tones.length - 1)]}" style="width:${share}%"></div></div>
+      <li class="rp-bar">
+        <span class="rp-bar-name" title="${escapeHtml(g.skill)}">${escapeHtml(g.skill)}</span>
+        <span class="rp-bar-track" aria-hidden="true"><span class="rp-bar-fill" style="display:block;width:${width}%"></span></span>
+        <span class="rp-bar-count"><b>${plural(g.count, "role")}</b> · ${share}%</span>
       </li>`;
   }).join("");
 }
 
-// ---- sources ring ---------------------------------------------------------------------
+// ---- sources ---------------------------------------------------------------------
+
+const SOURCE_NAMES = {
+  linkedin: "LinkedIn", greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby",
+  smartrecruiters: "SmartRecruiters", himalayas: "Himalayas", remotive: "Remotive",
+  jobicy: "Jobicy", workingnomads: "Working Nomads", weworkremotely: "We Work Remotely",
+  remoteok: "RemoteOK", generic: "Job boards & career pages", wuzzuf: "Wuzzuf", bayt: "Bayt",
+  gulftalent: "GulfTalent", tanqeeb: "Tanqeeb", wellfound: "Wellfound", simplyhired: "SimplyHired",
+  serpapi: "Google Jobs", watchlist: "Watchlist",
+};
+const SOURCE_COLORS = ["#9c3e1e", "#0a6a64", "#a06908", "#bc5633", "#86d4cc", "#8a726b", "#ddc0b8"];
 
 function paintSources() {
   const counts = {};
   apps.forEach((a) => { const s = a.source || "other"; counts[s] = (counts[s] || 0) + 1; });
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  let entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const total = apps.length;
-  const text = document.getElementById("source-text");
-  const ring = document.getElementById("source-ring");
-  if (!total) { text.textContent = "No roles yet."; ring.innerHTML = ""; return; }
-  text.textContent = entries.map(([s, n]) => `${s} (${Math.round((n / total) * 100)}%)`).join(" · ");
-  const colors = ["#9c3e1e", "#6a5d43", "#d7c4a5", "#bc5633", "#8a726b"];
-  const r = 15.9, c = 2 * Math.PI * r;
-  let offset = 0;
-  ring.innerHTML = `<circle cx="21" cy="21" r="${r}" fill="none" stroke="#ece8e1" stroke-width="4"/>` + entries.map(([, n], i) => {
-    const len = (n / total) * c;
-    const seg = `<circle cx="21" cy="21" r="${r}" fill="none" stroke="${colors[i % colors.length]}" stroke-width="4"
-      stroke-dasharray="${Math.max(0, len - 0.6).toFixed(2)} ${(c - len + 0.6).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}"/>`;
-    offset += len;
-    return seg;
-  }).join("");
+  const bar = document.getElementById("source-bar");
+  const legend = document.getElementById("source-legend");
+  if (!total) {
+    document.getElementById("source-total").textContent = "No roles yet.";
+    bar.hidden = true;
+    return;
+  }
+  // Six named sources at most; the rest share one "Other" slice.
+  if (entries.length > 7) {
+    const rest = entries.slice(6).reduce((n, [, c]) => n + c, 0);
+    entries = [...entries.slice(0, 6), ["other", rest]];
+  }
+  document.getElementById("source-total").textContent =
+    `${plural(total, "role")} from ${plural(Object.keys(counts).length, "source")}.`;
+  const name = (s) => SOURCE_NAMES[s] || (s === "other" ? "Other" : s);
+  bar.innerHTML = entries.map(([s, n], i) =>
+    `<span style="width:${(n / total) * 100}%;background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}" title="${escapeHtml(name(s))}: ${n}"></span>`).join("");
+  legend.innerHTML = entries.map(([s, n], i) => `
+    <li><i style="background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}"></i>${escapeHtml(name(s))} <b>${Math.round((n / total) * 100)}%</b></li>`).join("");
 }
 
-// ---- dispatches -----------------------------------------------------------------------
+// ---- news: the latest digest, read into points, sources and threads -------------
+
+function parseDigest(text) {
+  const [main, boardsPart = ""] = text.split(/\n\s*On the boards this week:\s*\n/);
+  const [summary, sourcesPart = ""] = main.split(/\n\s*Sources:\s*\n/);
+  const sources = {};
+  sourcesPart.replace(/\[(\d+)\]\s*(.+?)(?:\s+—\s+(.+?))?\s*\n\s*(https?:\/\/\S+)/g, (_, n, title, outlet, url) => {
+    sources[n] = { title, outlet: outlet || "", url };
+  });
+  const points = summary.split("\n")
+    .map((l) => l.trim())
+    .filter((l) => /^[-*•]/.test(l))
+    .map((l) => ({
+      text: l.replace(/^[-*•]\s*/, "").replace(/\s*\[\d+\]/g, "").trim(),
+      refs: [...l.matchAll(/\[(\d+)\]/g)].map((m) => sources[m[1]]).filter(Boolean),
+    }));
+  const boards = [];
+  boardsPart.replace(/-\s*(.+?)\s*\(([^)]*)\)\s*\n\s*(https?:\/\/\S+)/g, (_, title, meta, url) => {
+    boards.push({ title, meta, url });
+  });
+  return { points, boards, fallback: points.length ? "" : summary.trim() };
+}
+
+async function loadNews() {
+  const body = document.getElementById("news-body");
+  const when = document.getElementById("digest-date");
+  try {
+    const digests = await getJSON("/api/news?limit=1");
+    if (!digests.length) {
+      when.textContent = "The Sa'ei Weekly arrives on Mondays at 9:00.";
+      body.innerHTML = `<p class="text-body-md text-on-surface-variant">No digest yet. Set the topic it follows in <a class="font-semibold text-primary underline" href="settings.html#email">Settings</a>.</p>`;
+      return;
+    }
+    const d = digests[0];
+    when.textContent = `From The Sa'ei Weekly on ${d.date_created ? fmtDate(d.date_created) : "its last run"}, following ${d.field || "your field"}.`;
+    const { points, boards, fallback } = parseDigest(d.content || "");
+    const link = (r) => `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.outlet || "Read the story")}</a>`;
+    body.innerHTML = (points.length
+      ? `<ul class="rp-news">${points.map((p) => `
+          <li>${escapeHtml(p.text)}${p.refs.length ? `<span>${p.refs.map(link).join(", ")}</span>` : ""}</li>`).join("")}</ul>`
+      : `<p class="whitespace-pre-wrap text-body-md text-on-surface-variant">${escapeHtml(fallback)}</p>`)
+      + (boards.length ? `
+        <h3 class="mt-space-lg text-label-lg font-semibold text-on-surface">On the boards</h3>
+        <div class="rp-boards">${boards.map((b) => `
+          <a href="${escapeHtml(b.url)}" target="_blank" rel="noopener">${escapeHtml(b.title)}<span>${escapeHtml(b.meta)}</span></a>`).join("")}
+        </div>` : "");
+  } catch (e) {
+    body.innerHTML = `<p class="sa-empty">Couldn't load the news digest.</p>`;
+  }
+}
+
+// ---- sent by Sa'ei ----------------------------------------------------------------
+
+// What went wrong, said plainly; anything unrecognised is shown as it came.
+function plainError(err) {
+  if (/invalid_grant|sign-in has expired/i.test(err)) return "Google sign-in had expired. Sign in again under Settings, Email & reports.";
+  if (/isn't connected|not connected/i.test(err)) return "Gmail wasn't connected. Sign in under Settings, Email & reports.";
+  return err;
+}
 
 function dispatchItem(d) {
   const failed = d.status === "failed";
-  const state = failed ? "Failed" : d.dry_run ? "Logged (dry run)" : "Delivered";
+  const state = failed ? `<span class="rp-failed">Not sent</span>` : d.dry_run ? "Logged only (dry run)" : "Sent";
   return `
-    <article class="px-space-lg py-space-md">
-      <div class="mb-1 flex items-center justify-between gap-space-sm">
-        <span class="flex items-center gap-1.5 text-label-sm uppercase tracking-wider ${d.kind === "email" ? "text-secondary" : "text-primary"}">
-          <span class="h-1.5 w-1.5 rounded-full ${failed ? "bg-error" : d.kind === "email" ? "bg-secondary" : "bg-primary"}"></span>${escapeHtml(d.label)}
-        </span>
-        <span class="font-mono text-body-sm ${failed ? "text-error" : "text-on-surface-variant"}">${state} ${d.at ? fmtDate(d.at) : ""}</span>
+    <li>
+      <time datetime="${escapeHtml(d.at || "")}">${d.at ? fmtDate(d.at) : "—"}</time>
+      <div>
+        <h3>${escapeHtml(d.title)}</h3>
+        <p class="rp-meta">${state}${d.sub ? ` to ${escapeHtml(d.sub)}` : ""}</p>
+        ${d.error ? `<p class="text-body-sm text-error" title="${escapeHtml(d.error)}">${escapeHtml(plainError(d.error))}</p>` : ""}
+        ${d.content ? `<details><summary>Show what was sent</summary><pre>${escapeHtml(d.content)}</pre></details>` : ""}
       </div>
-      <h3 class="text-headline-sm text-on-surface">${escapeHtml(d.title)}</h3>
-      ${d.sub ? `<p class="text-body-sm text-on-surface-variant">${escapeHtml(d.sub)}</p>` : ""}
-      ${d.error ? `<p class="mt-1 text-body-sm text-error">${escapeHtml(d.error)}</p>` : ""}
-      ${d.content ? `
-        <details class="group mt-space-sm">
-          <summary class="flex cursor-pointer list-none items-center gap-1 text-label-md text-on-surface-variant hover:text-primary">
-            <span class="ms text-[16px]">visibility</span>Review transmission</summary>
-          <pre class="mt-space-sm max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-container-low p-space-md font-sans text-body-sm text-on-surface-variant">${escapeHtml(d.content)}</pre>
-        </details>` : ""}
-    </article>`;
+    </li>`;
 }
 
 function renderDispatches() {
@@ -155,14 +192,16 @@ function renderDispatches() {
   const more = document.getElementById("reports-more");
   const list = dispatches.filter((d) => dispatchFilter === "all" || d.kind === dispatchFilter);
   if (!list.length) {
-    el.innerHTML = `<p class="sa-empty">${dispatchFilter === "email" ? "No application emails sent yet." : dispatchFilter === "telegram" ? "No reports yet — the scheduler emails them at 20:00 and on Mondays." : "Nothing dispatched yet."}</p>`;
+    el.innerHTML = `<li class="sa-empty">${dispatchFilter === "email"
+      ? "No application emails yet. Approve one on the Applications page to send it."
+      : dispatchFilter === "report" ? "No reports yet. The daily summary goes out at 20:00." : "Nothing sent yet."}</li>`;
     more.hidden = true;
     return;
   }
   const shown = expanded ? list : list.slice(0, PREVIEW);
   el.innerHTML = shown.map(dispatchItem).join("");
   more.hidden = shown.length >= list.length;
-  more.textContent = `Show older (${list.length - shown.length} more) →`;
+  more.textContent = `Show ${list.length - shown.length} older`;
 }
 
 document.getElementById("reports-more").addEventListener("click", () => { expanded = true; renderDispatches(); });
@@ -186,30 +225,27 @@ async function load() {
   const emails = e.status === "fulfilled" ? e.value : [];
   dispatches = [
     ...reports.map((x) => ({
-      kind: "telegram", at: x.sent_at, status: x.status, dry_run: x.dry_run,
-      label: x.report_type === "daily" ? "Application summary" : "News digest",
-      title: x.report_type === "daily" ? "Daily application summary" : "Weekly news digest",
-      sub: "Report email", content: x.content, error: x.error_message,
+      kind: "report", at: x.sent_at, status: x.status, dry_run: x.dry_run,
+      title: x.report_type === "daily" ? "Daily application summary" : "The Sa'ei Weekly",
+      sub: "", content: x.content, error: x.error_message,
     })),
     ...emails.map((x) => ({
       kind: "email", at: x.sent_at, status: x.status, dry_run: x.dry_run,
-      label: "Application email",
-      title: x.subject,
-      sub: `To ${x.to_email}${x.job_title ? ` · ${x.job_title}${x.company ? " at " + x.company : ""}` : ""}`,
-      content: "", error: x.error_message,
+      title: x.job_title ? `Application: ${x.job_title}${x.company ? ` at ${x.company}` : ""}` : x.subject,
+      sub: x.to_email, content: "", error: x.error_message,
     })),
   ].sort((x, y) => new Date(y.at || 0) - new Date(x.at || 0));
 
-  if (a.status === "rejected") {
-    document.getElementById("momentum").textContent = "Could not reach the backend API.";
+  if (a.status === "rejected" && s.status === "rejected") {
+    document.getElementById("lede").textContent = "Sa'ei isn't running.";
+    document.getElementById("momentum").textContent = "Start it with run.bat (or ./run.sh) and reload this page.";
   } else {
-    paintMomentum();
+    paintOpening();
   }
-  paintStats();
   paintGaps();
   paintSources();
   if (r.status === "rejected" && e.status === "rejected") {
-    document.getElementById("reports-list").innerHTML = `<p class="sa-empty">Could not reach the backend API.</p>`;
+    document.getElementById("reports-list").innerHTML = `<li class="sa-empty">Couldn't load what Sa'ei sent.</li>`;
   } else {
     renderDispatches();
   }
