@@ -1,5 +1,7 @@
 """Weekly news digest for the user's field: stored, and emailed to you as
 "The Sa'ei Weekly", a newspaper-style front page (agents/news_email.py)."""
+from datetime import date
+
 import config
 from db import get_session, init_db
 from models import NewsDigest, ReportLog
@@ -37,7 +39,11 @@ def run_weekly_news_digest(field: str | None = None):
     html = render_digest_email(digest, edition=edition, reader=_reader_name())
 
     try:
-        result = send_report(f"The Sa'ei Weekly · {field}", report_text, html=html)
+        # Dated for the same reason as the daily report: a repeated subject
+        # lands inside last week's Gmail conversation.
+        today = date.today()
+        result = send_report(f"The Sa'ei Weekly · {field} · {today.day} {today.strftime('%b %Y')}",
+                             report_text, html=html)
         if result.get("dry_run"):
             status = "dry_run"
         elif "error" in result:
