@@ -145,7 +145,12 @@ def run_daily_report():
     html = render_daily_email(data, reader=_reader_name())
 
     try:
-        result = send_report("Sa'ei daily report", report_text, html=html)
+        # Dated, so each day's report is its own conversation: Gmail files
+        # mail with a repeated subject into the earlier thread, where a new
+        # report is easy to miss.
+        now = data["now"]
+        subject = f"Sa'ei daily report · {now.strftime('%A')} {now.day} {now.strftime('%b')}"
+        result = send_report(subject, report_text, html=html)
         if result.get("dry_run"):
             status = "dry_run"
         elif "error" in result:
