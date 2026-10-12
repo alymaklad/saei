@@ -668,6 +668,31 @@ def profile_text(profile: dict) -> str:
 
 # ---- entry point ------------------------------------------------------------
 
+_PROFILE_SITES = {"linkedin": "linkedin.com", "github": "github.com"}
+
+
+def fill_profile_links(profile: dict, links: list[str]) -> dict:
+    """Puts the CV's real LinkedIn / GitHub URLs in the contact block.
+
+    A CV often prints just the word "Linkedin" with the URL behind it as a
+    link, so the extraction only ever sees the word. When the extracted value
+    isn't a URL for that site, the CV's own link for it replaces it. For
+    GitHub, a profile link (github.com/you) wins over a repository link.
+    """
+    contact = profile.setdefault("contact", {}) if isinstance(profile.get("contact"), dict) else {}
+    profile["contact"] = contact
+    for field, site in _PROFILE_SITES.items():
+        current = str(contact.get(field) or "")
+        if site in current.lower():
+            continue
+        matches = [u for u in links if site in u.lower()]
+        if field == "github":
+            matches.sort(key=lambda u: len([p for p in re.sub(r"^\w+://", "", u).split("/")[1:] if p]))
+        if matches:
+            contact[field] = matches[0]
+    return profile
+
+
 def build_profile(cv_text: str, use_cache: bool = True) -> dict:
     """Parse a CV into structured entries. One LLM call, cached by hash+model.
 

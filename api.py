@@ -956,6 +956,8 @@ def _extract_and_store_profile(cv_path: str) -> dict:
 
     cv_text = cv_parser.parse_cv(cv_path)
     extracted = cv_profile.build_profile(cv_text, use_cache=False)
+    # The LinkedIn / GitHub URLs sit behind link words the text doesn't carry.
+    cv_profile.fill_profile_links(extracted, cv_parser.cv_links(cv_path))
     profile_store.save_extraction(extracted,
                                   cv_filename=os.path.basename(cv_path),
                                   cv_text=cv_text)

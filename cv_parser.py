@@ -26,6 +26,34 @@ def _parse_docx(path: str) -> str:
     return "\n".join(p.text for p in doc.paragraphs)
 
 
+def cv_links(path: str) -> list[str]:
+    """The web links a CV carries as clickable links -- e.g. the word
+    "Linkedin" pointing at linkedin.com/in/you. parse_cv() reads only the
+    visible words, so these URLs never reach the text. In document order,
+    without duplicates; mailto:/tel: links are left out."""
+    ext = os.path.splitext(path)[1].lower()
+    urls = []
+    try:
+        if ext == ".pdf":
+            import pdfplumber
+            with pdfplumber.open(path) as pdf:
+                for page in pdf.pages:
+                    urls += [h.get("uri") or "" for h in page.hyperlinks]
+        elif ext in (".docx", ".dotx"):
+            from docx import Document
+            from docx.opc.constants import RELATIONSHIP_TYPE as RT
+            rels = Document(path).part.rels.values()
+            urls += [r.target_ref for r in rels if r.reltype == RT.HYPERLINK and r.is_external]
+    except Exception:  # noqa: BLE001 -- links are a bonus; the text still parses
+        return []
+    seen = []
+    for url in urls:
+        url = (url or "").strip()
+        if url.lower().startswith(("http://", "https://", "www.")) and url not in seen:
+            seen.append(url)
+    return seen
+
+
 def find_default_cv(directory: str = "cv") -> str | None:
     """
     Looks for cv/current_cv.pdf or cv/current_cv.docx -- whichever was most
