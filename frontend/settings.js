@@ -651,3 +651,10 @@ document.getElementById("news-topic-form").addEventListener("submit", async (e) 
     document.getElementById("news-topic-note").textContent = err.message || "Could not save.";
   }
 });
+
+// ---- desert scene (sidebar), remembered in this browser ----------------------
+const desertToggle = document.getElementById("desert-toggle");
+try { desertToggle.checked = localStorage.getItem("saei.desert") !== "off"; } catch (e) { desertToggle.checked = true; }
+desertToggle.addEventListener("change", () => {
+  try { localStorage.setItem("saei.desert", desertToggle.checked ? "on" : "off"); } catch (e) { /* private mode */ }
+});

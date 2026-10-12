@@ -72,6 +72,7 @@
         <nav class="flex flex-col gap-space-xs" aria-label="Main">${navHTML}</nav>
       </div>
       <div class="relative flex flex-col gap-space-sm">
+      ${desertScene()}
       <div id="status-pill" class="pill pill-muted self-start">Checking status&hellip;</div>
       <div id="sa-account-menu" role="menu" hidden
            class="absolute bottom-full left-0 right-0 mb-space-xs overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lg ring-1 ring-surface-container">
@@ -186,6 +187,63 @@
   // data-settings-panel="key" plus data-title / data-icon / data-group. This
   // builds the left menu from them and shows one at a time, chosen by the URL
   // hash (settings.html#email), so a section can be linked to directly.
+  // ---- the desert: a small scene in the sidebar --------------------------------
+  //
+  // Dunes, a low sun, a date-palm oasis, one cactus, blowing sand, and a camel
+  // walking the caravan's slow step across -- Sa'ei's own image (the logo's
+  // rider, the footer's caravan). Kept in the sidebar's empty space so it never
+  // sits behind anything you read. Off: Settings -> Help & about. Still:
+  // prefers-reduced-motion. Decorative, so hidden from screen readers.
+  function desertScene() {
+    let off = false;
+    try { off = localStorage.getItem("saei.desert") === "off"; } catch (e) { /* default on */ }
+    if (off) return "";
+    const grains = Array.from({ length: 14 }, (_, i) => {
+      const y = 62 + ((i * 37) % 44);
+      const r = (0.6 + ((i * 13) % 7) / 10).toFixed(1);
+      const dur = 6 + ((i * 7) % 9);
+      const delay = -((i * 1.7) % dur).toFixed(1);
+      return `<circle class="ds-grain" cx="-6" cy="${y}" r="${r}" style="animation-duration:${dur}s;animation-delay:${delay}s"/>`;
+    }).join("");
+    const palm = (x, base, h, flip) => `
+      <g class="ds-palm" transform="translate(${x} ${base}) scale(${flip ? -1 : 1} 1)">
+        <path d="M0 0 C1 -${h * 0.4} -1 -${h * 0.7} 2 -${h}" fill="none" stroke="#9a8460" stroke-width="1.6" stroke-linecap="round"/>
+        <g transform="translate(2 -${h})"><g class="ds-fronds" fill="#8f9a67">
+          <path d="M0 0 C-6 -4 -11 -2 -14 3 C-9 -1 -5 0 0 1Z"/>
+          <path d="M0 0 C6 -5 11 -3 14 2 C9 -2 5 -1 0 1Z"/>
+          <path d="M0 0 C-3 -7 -1 -11 3 -12 C1 -8 1 -4 1 0Z"/>
+          <path d="M0 0 C-5 1 -9 5 -10 9 C-6 5 -3 3 0 1Z"/>
+          <path d="M0 0 C5 1 9 5 9 9 C6 5 3 3 0 1Z"/>
+        </g></g>
+      </g>`;
+    return `
+      <div class="ds" aria-hidden="true" title="The caravan advances step by deliberate step.">
+        <svg viewBox="0 0 256 112" preserveAspectRatio="xMidYMax slice" role="presentation">
+          <circle cx="196" cy="52" r="13" fill="#ffb59e" opacity=".55"/>
+          <path d="M0 78 C30 64 62 62 96 72 C126 81 150 66 184 62 C214 59 236 68 256 74 V112 H0Z" fill="#ecdcc3"/>
+          ${palm(40, 70, 26, false)}${palm(52, 70, 20, true)}
+          <ellipse cx="46" cy="72" rx="16" ry="2.4" fill="#a8c2b4" opacity=".55"/>
+          <path d="M0 96 C40 84 84 82 128 90 C170 97 210 86 256 88 V112 H0Z" fill="#e3cba5"/>
+          <g class="ds-cactus" transform="translate(222 90)" fill="#8f9a67">
+            <rect x="-2" y="-17" width="4" height="17" rx="2"/>
+            <path d="M-2 -8 H-5.5 a1.6 1.6 0 0 1 -1.6 -1.6 V-13 a1.6 1.6 0 0 1 3.2 0 V-11.2 H-2Z"/>
+            <path d="M2 -10 H5.5 a1.6 1.6 0 0 0 1.6 -1.6 V-15 a1.6 1.6 0 0 0 -3.2 0 V-13.2 H2Z"/>
+          </g>
+          <g class="ds-walk"><g class="ds-camel" transform="translate(0 93)">
+            <g class="ds-legs-a" fill="#5f3920"><rect x="7" y="-14" width="1.8" height="14" rx=".9"/><rect x="21" y="-14" width="1.8" height="14" rx=".9"/></g>
+            <g class="ds-legs-b" fill="#7a4a2a"><rect x="10" y="-14" width="1.8" height="14" rx=".9"/><rect x="24" y="-14" width="1.8" height="14" rx=".9"/></g>
+            <g class="ds-body" fill="#7a4a2a">
+              <path d="M5 -13 C4 -19 9 -22 12 -21 C13 -27 20 -28 21 -21 C24 -21 27 -18 27 -13 C21 -11 11 -11 5 -13Z"/>
+              <path d="M25 -17 C28 -21 29 -25 31 -27 C33 -29 36 -28 37 -26 L35 -25 C33 -25 32 -22 30 -18 C29 -15 27 -14 25 -14Z"/>
+              <path d="M5 -16 C2 -15 1 -12 2 -9" fill="none" stroke="#7a4a2a" stroke-width="1.2" stroke-linecap="round"/>
+            </g>
+          </g></g>
+          <g class="ds-sand" fill="#c8a978">${grains}</g>
+          <path class="ds-gust" d="M-40 70 C-20 66 0 70 20 66" fill="none" stroke="#d8c09a" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>`;
+  }
+
   function settingsShell() {
     const main = document.getElementById("page");
     const panels = [...main.querySelectorAll("[data-settings-panel]")];
