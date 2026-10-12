@@ -10,67 +10,71 @@
 </head>
 <body data-page="reports" data-footer="Daily summary at 20:00 and The Sa'ei Weekly on Mondays at 9:00, while Sa'ei is running">
 <main id="page">
-  <!-- One reading column: the report reads top to bottom like a letter,
-       from the headline numbers down to what Sa'ei sent. -->
-  <article class="rp">
+  <div class="flex flex-col">
 
-    <!-- Opening: the numbers as a sentence -->
-    <header class="rp-open">
-      <h1 class="sa-page-title">Career report</h1>
-      <p class="rp-lede" id="lede" aria-live="polite">Reading your search&hellip;</p>
-      <p class="rp-summary" id="momentum"></p>
+    <header class="sa-page-head">
+      <div>
+        <h1 class="sa-page-title">Career report</h1>
+        <p class="sa-page-desc rp-desc" id="lede" aria-live="polite">Reading your search&hellip;</p>
+      </div>
     </header>
 
+    <!-- The summary, in the same strip Home uses for its insight -->
+    <div class="mb-space-xl hidden items-start gap-space-sm rounded-xl bg-surface-container-low px-space-lg py-space-md" id="momentum-box">
+      <span class="ms mt-0.5 text-[20px] text-tertiary">lightbulb</span>
+      <p class="rp-summary" id="momentum"></p>
+    </div>
+
     <!-- Skills -->
-    <section class="rp-section" aria-labelledby="skills-h">
-      <div class="rp-head">
-        <h2 id="skills-h">Skills that would open the most doors</h2>
-        <p id="gaps-intro">Requirements your profile doesn't show yet, by how many of your roles ask for them.</p>
+    <section class="mb-space-xl" aria-labelledby="skills-h">
+      <h2 class="mb-space-md text-headline-sm text-on-surface" id="skills-h">Skills that would open the most doors</h2>
+      <div class="sa-card">
+        <ol class="rp-bars" id="skill-gaps-list"><li class="sa-empty">Loading&hellip;</li></ol>
+        <p class="rp-note">
+          Used one of these in a job or project? Add it to that entry on your
+          <a href="profile.html">profile</a> and it counts the next time roles are scored.
+        </p>
       </div>
-      <ol class="rp-bars" id="skill-gaps-list"><li class="sa-empty">Loading&hellip;</li></ol>
-      <p class="rp-note">
-        Used one of these in a job or project? Add it to that entry on your
-        <a href="profile.html">profile</a> and it counts the next time roles are scored.
-      </p>
     </section>
 
     <!-- Sources -->
-    <section class="rp-section" aria-labelledby="sources-h">
-      <div class="rp-head">
-        <h2 id="sources-h">Where your roles come from</h2>
-        <p id="source-total"></p>
+    <section class="mb-space-xl" aria-labelledby="sources-h">
+      <div class="mb-space-md flex items-end justify-between gap-space-md">
+        <h2 class="text-headline-sm text-on-surface" id="sources-h">Where your roles come from</h2>
+        <span class="text-label-md text-on-surface-variant" id="source-total"></span>
       </div>
-      <div class="rp-stack" id="source-bar" role="img" aria-label="Share of roles by source"></div>
-      <ul class="rp-legend" id="source-legend"></ul>
+      <div class="sa-card">
+        <div class="rp-stack" id="source-bar" role="img" aria-label="Share of roles by source"></div>
+        <ul class="rp-legend" id="source-legend"></ul>
+      </div>
     </section>
 
     <!-- News -->
-    <section class="rp-section" aria-labelledby="news-h">
-      <div class="rp-head">
-        <h2 id="news-h">This week's news</h2>
-        <p id="digest-date">From your latest Sa'ei Weekly.</p>
+    <section class="mb-space-xl" aria-labelledby="news-h">
+      <div class="mb-space-md flex items-end justify-between gap-space-md">
+        <h2 class="text-headline-sm text-on-surface" id="news-h">This week's news</h2>
+        <span class="text-label-md text-on-surface-variant" id="digest-date"></span>
       </div>
-      <div id="news-body"><p class="sa-empty">Loading&hellip;</p></div>
+      <div class="sa-card" id="news-body"><p class="sa-empty">Loading&hellip;</p></div>
     </section>
 
     <!-- Dispatches -->
-    <section class="rp-section" aria-labelledby="sent-h">
-      <div class="rp-head rp-head-row">
-        <div>
-          <h2 id="sent-h">Sent by Sa'ei</h2>
-          <p>Every report and application email, newest first.</p>
-        </div>
+    <section class="mb-space-lg" aria-labelledby="sent-h">
+      <div class="mb-space-md flex items-end justify-between gap-space-md">
+        <h2 class="text-headline-sm text-on-surface" id="sent-h">Sent by Sa'ei</h2>
         <div class="sa-tabs" id="dispatch-tabs">
           <button type="button" class="sa-tab is-active" data-filter="all">All</button>
           <button type="button" class="sa-tab" data-filter="report">Reports</button>
           <button type="button" class="sa-tab" data-filter="email">Applications</button>
         </div>
       </div>
-      <ol class="rp-log" id="reports-list"><li class="sa-empty">Loading&hellip;</li></ol>
-      <button type="button" class="sa-btn-ghost mt-space-sm" id="reports-more" hidden></button>
+      <ol class="sa-list rp-log" id="reports-list"><li class="sa-empty">Loading&hellip;</li></ol>
+      <div class="mt-space-md flex justify-end">
+        <button type="button" class="sa-btn-ghost" id="reports-more" hidden></button>
+      </div>
     </section>
 
-  </article>
+  </div>
 </main>
 
 <script src="shell.js"></script>

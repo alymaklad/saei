@@ -20,6 +20,13 @@ function listJoin(items) {
 
 // ---- opening ----------------------------------------------------------------
 
+function showSummary() {
+  const box = document.getElementById("momentum-box");
+  const has = document.getElementById("momentum").textContent.trim().length > 0;
+  box.classList.toggle("hidden", !has);
+  box.classList.toggle("flex", has);
+}
+
 function paintOpening() {
   const lede = document.getElementById("lede");
   const summary = document.getElementById("momentum");
@@ -27,6 +34,7 @@ function paintOpening() {
   if (!found) {
     lede.textContent = "No roles yet.";
     summary.textContent = "Run a search and this report fills in: your strongest matches, the skills that would open the most doors, and everything Sa'ei sends you.";
+    showSummary();
     return;
   }
   const high = apps.filter((a) => (a.match_score || 0) >= 0.8).length;
@@ -50,6 +58,7 @@ function paintOpening() {
       + `${gaps[1] ? `, and ${escapeHtml(gaps[1].skill)} in another ${gaps[1].count}` : ""}.`;
   }
   summary.innerHTML = html.trim();
+  showSummary();
 }
 
 // ---- skills ------------------------------------------------------------------
@@ -96,7 +105,7 @@ function paintSources() {
     entries = [...entries.slice(0, 6), ["other", rest]];
   }
   document.getElementById("source-total").textContent =
-    `${plural(total, "role")} from ${plural(Object.keys(counts).length, "source")}.`;
+    `${plural(total, "role")} from ${plural(Object.keys(counts).length, "source")}`;
   const name = (s) => (s === "other" ? "Other" : s === "generic" ? "Job boards & career pages" : sourceName(s));
   bar.innerHTML = entries.map(([s, n], i) =>
     `<span style="width:${(n / total) * 100}%;background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}" title="${escapeHtml(name(s))}: ${n}"></span>`).join("");
@@ -133,12 +142,12 @@ async function loadNews() {
   try {
     const digests = await getJSON("/api/news?limit=1");
     if (!digests.length) {
-      when.textContent = "The Sa'ei Weekly arrives on Mondays at 9:00.";
+      when.textContent = "Mondays at 9:00";
       body.innerHTML = `<p class="text-body-md text-on-surface-variant">No digest yet. Set the topic it follows in <a class="font-semibold text-primary underline" href="settings.html#email">Settings</a>.</p>`;
       return;
     }
     const d = digests[0];
-    when.textContent = `From The Sa'ei Weekly on ${d.date_created ? fmtDate(d.date_created) : "its last run"}, following ${d.field || "your field"}.`;
+    when.textContent = [d.field, d.date_created ? fmtDate(d.date_created) : ""].filter(Boolean).join(", ");
     const { points, boards, fallback } = parseDigest(d.content || "");
     const link = (r) => `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.outlet || "Read the story")}</a>`;
     body.innerHTML = (points.length
@@ -231,6 +240,7 @@ async function load() {
   if (a.status === "rejected" && s.status === "rejected") {
     document.getElementById("lede").textContent = "Sa'ei isn't running.";
     document.getElementById("momentum").textContent = "Start it with run.bat (or ./run.sh) and reload this page.";
+    showSummary();
   } else {
     paintOpening();
   }

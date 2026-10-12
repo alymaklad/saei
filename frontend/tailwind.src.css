@@ -184,21 +184,11 @@
   .sa-msg.save-success { @apply text-secondary; }
   .sa-msg.save-error { @apply text-error; }
 
-  /* ---- reports: one reading column ---- */
-  .rp { @apply max-w-[56rem]; }
-  .rp-open { @apply relative overflow-hidden pb-space-xl; }
-  /* The one loud element: the numbers, said as a sentence. */
-  .rp-lede { @apply relative mt-space-lg max-w-[24ch] text-[34px] font-semibold leading-[1.2] tracking-[-0.025em] text-on-surface-variant md:text-[38px]; text-wrap: balance; font-variant-numeric: tabular-nums; }
-  .rp-lede b { @apply font-bold text-on-surface; }
-  .rp-lede .rp-hot { @apply text-primary; }
-  .rp-summary { @apply relative mt-space-lg max-w-[64ch] text-body-lg text-on-surface-variant; }
+  /* ---- reports: same cards and headings as the other pages ---- */
+  .rp-desc b { @apply font-semibold text-on-surface; }
+  .rp-desc .rp-hot { @apply text-primary; }
+  .rp-summary { @apply max-w-[72ch] text-body-md text-on-surface-variant; }
   .rp-summary strong { @apply font-semibold text-on-surface; }
-
-  .rp-section { @apply border-t border-surface-container-high py-space-xl; }
-  .rp-head { @apply mb-space-lg; }
-  .rp-head h2 { @apply text-headline-md text-on-surface; }
-  .rp-head p { @apply mt-1 max-w-[64ch] text-body-md text-on-surface-variant; }
-  .rp-head-row { @apply flex flex-wrap items-end justify-between gap-space-md; }
 
   /* skill bars: name | bar | count, aligned on one grid */
   .rp-bars { @apply flex flex-col gap-space-md; }
@@ -223,7 +213,7 @@
 
   /* news */
   .rp-news { @apply flex flex-col gap-space-md; }
-  .rp-news li { @apply max-w-[66ch] border-l-2 border-primary-fixed pl-space-md text-body-md text-on-surface; }
+  .rp-news li { @apply max-w-[72ch] border-l-2 border-primary-fixed pl-space-md text-body-md text-on-surface; }
   .rp-news li span { @apply mt-0.5 block text-body-sm text-on-surface-variant; }
   .rp-boards { @apply mt-space-lg grid gap-space-sm sm:grid-cols-2; }
   .rp-boards a { @apply block rounded-lg bg-surface-container-low px-space-md py-space-sm text-label-md text-on-surface no-underline hover:bg-surface-container; }
@@ -231,7 +221,7 @@
 
   /* the log: date in the gutter, then what was sent */
   .rp-log { @apply flex flex-col; }
-  .rp-log > li:not(.sa-empty) { display: grid; grid-template-columns: 5.5rem 1fr; @apply gap-space-md border-b border-surface-container py-space-md; }
+  .rp-log > li:not(.sa-empty) { display: grid; grid-template-columns: 5.5rem 1fr; @apply gap-space-md px-space-lg py-space-md; }
   .rp-log time { @apply pt-0.5 text-body-sm text-on-surface-variant; font-variant-numeric: tabular-nums; }
   .rp-log h3 { @apply text-label-lg font-semibold text-on-surface; }
   .rp-log .rp-meta { @apply text-body-sm text-on-surface-variant; }
