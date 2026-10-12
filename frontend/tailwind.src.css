@@ -69,9 +69,15 @@
   .sa-card-muted { @apply rounded-xl bg-surface-container-low p-6; }
   .sa-tile { @apply rounded-xl bg-surface-container-low p-4; }
   /* Small caps label above a title ("DAILY OVERVIEW"). */
-  .sa-eyebrow { @apply inline-flex items-center gap-1.5 text-label-sm uppercase tracking-widest text-secondary; }
-  .sa-page-title { @apply text-display-lg-mobile tracking-tight text-on-surface md:text-display-lg; }
-  .sa-page-desc { @apply mt-1 max-w-2xl text-body-lg text-on-surface-variant; }
+  .sa-eyebrow { @apply inline-flex items-center gap-1.5 text-label-md font-semibold text-secondary; }
+  /* Every page opens the same way: title, one line saying what the page is
+     for, and its actions on the right (which never wrap). */
+  .sa-page-head { @apply mb-space-xl flex items-end justify-between gap-space-lg; }
+  .sa-page-head > :first-child { @apply min-w-0 flex-1; }
+  .sa-page-title { @apply text-[40px] font-semibold leading-[48px] tracking-[-0.025em] text-on-surface; }
+  .sa-page-desc { @apply mt-2 max-w-[62ch] text-body-lg text-on-surface-variant; }
+  .sa-page-actions { @apply flex flex-shrink-0 items-center gap-space-sm; }
+  .sa-page-actions > * { @apply whitespace-nowrap; }
   .sa-section-title { @apply text-headline-md text-on-surface; }
   .sa-card-title { @apply text-headline-sm text-on-surface; }
   .sa-icon-badge { @apply flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary; }
@@ -181,9 +187,8 @@
   /* ---- reports: one reading column ---- */
   .rp { @apply max-w-[56rem]; }
   .rp-open { @apply relative overflow-hidden pb-space-xl; }
-  .rp-title { @apply relative text-label-lg font-semibold text-on-surface-variant; }
   /* The one loud element: the numbers, said as a sentence. */
-  .rp-lede { @apply relative mt-space-sm max-w-[21ch] text-[44px] font-semibold leading-[1.12] tracking-[-0.03em] text-on-surface-variant md:max-w-[25ch] md:text-[52px]; text-wrap: balance; font-variant-numeric: tabular-nums; }
+  .rp-lede { @apply relative mt-space-lg max-w-[24ch] text-[34px] font-semibold leading-[1.2] tracking-[-0.025em] text-on-surface-variant md:text-[38px]; text-wrap: balance; font-variant-numeric: tabular-nums; }
   .rp-lede b { @apply font-bold text-on-surface; }
   .rp-lede .rp-hot { @apply text-primary; }
   .rp-summary { @apply relative mt-space-lg max-w-[64ch] text-body-lg text-on-surface-variant; }

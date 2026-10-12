@@ -11,19 +11,19 @@
 <body data-page="profile">
 <main id="page">
   <div class="profile-page flex flex-col">
-    <div class="mb-space-lg flex items-end justify-between gap-space-lg">
+    <header class="sa-page-head">
       <div>
-        <h1 class="text-headline-lg text-on-surface">Career Profile</h1>
-        <p class="mt-1 max-w-xl text-body-md text-on-surface-variant">Your verified ground truth — what Sa'ei scores opportunities against and tailors every application from.</p>
+        <h1 class="sa-page-title">Profile</h1>
+        <p class="sa-page-desc">What Sa'ei scores roles against and writes your CVs from.</p>
       </div>
-      <div class="flex items-center gap-space-sm">
+      <div class="sa-page-actions">
         <button type="button" class="sa-btn bg-surface-container-lowest" id="btn-re-extract"><span class="ms text-[18px]">sync</span>Re-extract from CV</button>
-        <button type="button" class="sa-btn-primary" id="btn-save"><span class="ms text-[18px]">verified</span>Save changes</button>
+        <button type="button" class="sa-btn-primary" id="btn-save"><span class="ms text-[18px]">save</span>Save changes</button>
       </div>
-    </div>
+    </header>
 
     <!-- Identity card -->
-    <section class="sa-card sa-saei-wordmark sa-saei-wordmark-profile mb-space-lg flex items-start gap-space-lg p-space-lg">
+    <section class="sa-card mb-space-lg flex items-start gap-space-lg p-space-lg">
       <div class="relative flex-shrink-0">
         <div class="flex h-20 w-20 items-center justify-center rounded-xl bg-primary-fixed text-headline-md text-primary" id="id-initials">&mdash;</div>
         <span class="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-tertiary-container ring-2 ring-surface-container-lowest"></span>
@@ -45,19 +45,13 @@
 
     <div id="profile-alert" class="profile-alert mb-space-md" hidden></div>
 
-    <div class="mb-space-md flex items-center justify-between rounded-lg bg-surface-container-low px-space-md py-space-sm">
-      <span class="flex items-center gap-2 text-body-sm text-on-surface-variant"><span class="ms text-[18px]">menu_book</span>Focused mode: one section opens at a time.</span>
-      <span class="text-label-sm uppercase tracking-wider text-on-surface-variant" id="section-count">6 sections total</span>
-    </div>
 
     <!-- Section order: any order is allowed, the recommended one is named. -->
     <div class="order-note mb-space-md" id="order-note">
       <span class="ms text-[18px] text-secondary">tips_and_updates</span>
       <p class="min-w-0 flex-1">
-        <strong class="font-semibold text-on-surface" id="order-note-lead">Recommended order.</strong>
-        Experience &rarr; Projects &rarr; Education &rarr; Skills &rarr; Certifications is the order recruiters
-        and ATS parsers expect to read. Tailored CVs print sections in the order set here &mdash; use the arrows on a
-        section to move it; About &amp; Contact always stays first.
+        <strong class="font-semibold text-on-surface" id="order-note-lead">Recommended order:</strong>
+        Experience, Projects, Education, Skills, Certifications. Your tailored CVs follow the order below.
       </p>
       <button type="button" class="order-reset" id="order-reset" hidden><span class="ms text-[16px]">restart_alt</span>Reset to recommended</button>
     </div>
@@ -67,7 +61,7 @@
       <section class="acc" data-acc="contact">
         <button type="button" class="acc-head">
           <span class="acc-icon"><span class="ms">contact_page</span></span>
-          <span class="acc-text"><span class="acc-title">1. About &amp; Contact <span class="acc-tag">Verified ground truth</span></span><span class="acc-sub" data-acc-sub="contact"></span></span>
+          <span class="acc-text"><span class="acc-title">1. About &amp; Contact</span><span class="acc-sub" data-acc-sub="contact"></span></span>
           <span class="acc-toggle"></span>
         </button>
         <div class="acc-body">
@@ -151,28 +145,24 @@
       <section class="acc" data-acc="skills">
         <button type="button" class="acc-head">
           <span class="acc-icon acc-icon-hot"><span class="ms">psychology</span></span>
-          <span class="acc-text"><span class="acc-title"><span class="acc-num">5.</span> Skills &amp; Competencies <span class="acc-tag acc-tag-hot">Active focus</span></span><span class="acc-sub"><span id="count-skills">0</span> skills cataloged</span></span>
+          <span class="acc-text"><span class="acc-title"><span class="acc-num">5.</span> Skills &amp; Competencies</span><span class="acc-sub"><span id="count-skills">0</span> skills cataloged</span></span>
           <span class="acc-toggle"></span>
         </button>
         <div class="acc-body">
-          <div class="mb-space-sm flex items-center justify-between rounded-lg bg-surface-container-low px-space-md py-space-sm">
-            <span class="text-label-md font-semibold text-on-surface">Core &amp; listed skills</span>
-            <span class="flex items-center gap-1 text-body-sm text-secondary"><span class="ms text-[16px]">verified_user</span>What the scorer treats as “listed, not demonstrated”</span>
-          </div>
           <div class="chip-field" id="skills-field"></div>
           <p class="empty-state" id="empty-skills" hidden>No skills yet.</p>
           <div class="skill-entry mt-space-md">
             <input type="text" id="skill-input" class="skill-input" placeholder="Add a skill (e.g., vLLM, TensorRT, Triton)&hellip;">
-            <button type="button" class="sa-btn" id="skill-add"><span class="ms text-[18px]">add</span>Add Skill</button>
+            <button type="button" class="sa-btn" id="skill-add"><span class="ms text-[18px]">add</span>Add skill</button>
           </div>
-          <p class="field-hint mt-space-sm">Press Enter to add, or paste a comma-separated list. A skill named only here earns partial credit — mentioning it inside a role or project is what counts as demonstrated.</p>
+          <p class="field-hint mt-space-sm">A skill listed only here counts less than one you mention in a role or project.</p>
         </div>
       </section>
 
       <section class="acc" data-acc="certifications">
         <button type="button" class="acc-head">
           <span class="acc-icon"><span class="ms">workspace_premium</span></span>
-          <span class="acc-text"><span class="acc-title"><span class="acc-num">6.</span> Certifications <span class="acc-tag">Optional</span></span><span class="acc-sub"><span id="count-certifications">0</span> added</span></span>
+          <span class="acc-text"><span class="acc-title"><span class="acc-num">6.</span> Certifications</span><span class="acc-sub"><span id="count-certifications">0</span> added</span></span>
           <span class="acc-toggle"></span>
         </button>
         <div class="acc-body">
@@ -200,10 +190,7 @@
     </button>
 
     <div class="profile-footer mt-space-lg">
-      <span class="profile-footer-note flex items-center gap-2">
-        <span class="ms text-[18px]">info</span>
-        Your profile is used to score jobs and to generate tailored CVs.
-      </span>
+      <span class="profile-footer-note"></span>
       <span class="profile-footer-actions">
         <span id="profile-save-message" class="save-message"></span>
         <button type="button" class="btn" id="btn-discard">Discard</button>

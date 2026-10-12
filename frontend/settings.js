@@ -478,20 +478,12 @@ loadMatchingSettings();
 // for the (hidden) <select>/<input> elements above, which stay the single
 // source of truth -- every load/save path in this file reads and writes those.
 
-const MODE_GUARDRAIL = {
-  off: "Active guardrail: human review for everything",
-  whitelist: "Active guardrail: vetted whitelist",
-  any: "No source guardrail — any website",
-};
 
 function syncModeCards() {
   document.querySelectorAll("#mode-cards [data-mode]").forEach((c) => {
     c.classList.toggle("is-active", c.dataset.mode === autoApplyModeSelect.value);
     c.setAttribute("aria-pressed", String(c.dataset.mode === autoApplyModeSelect.value));
   });
-  const chip = document.getElementById("mode-guardrail-chip");
-  chip.textContent = MODE_GUARDRAIL[autoApplyModeSelect.value] || "";
-  chip.className = autoApplyModeSelect.value === "any" ? "sa-chip-amber self-start" : "sa-chip-teal self-start";
 }
 
 document.getElementById("mode-cards").addEventListener("click", (e) => {

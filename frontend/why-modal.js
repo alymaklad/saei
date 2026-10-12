@@ -299,7 +299,7 @@ function bucketSection(key, bucket) {
   return `
     <section class="mb-space-lg">
       <div class="flex items-baseline justify-between gap-space-md">
-        <h4 class="flex items-baseline gap-2 text-body-md font-semibold uppercase tracking-wide text-on-surface">
+        <h4 class="flex items-baseline gap-2 text-body-md font-semibold text-on-surface">
           ${escapeHtml(bucket.label || key)}
           <span class="text-body-sm normal-case tracking-normal ${p >= 60 ? "text-secondary" : "text-primary-container"}"><span class="text-outline-variant">•</span> ${p}% achieved</span>
         </h4>
@@ -413,7 +413,7 @@ function ensureModal() {
           </div>
           <div class="flex min-h-0 flex-col">
             <div class="flex items-center justify-between gap-space-md border-b border-surface-container-high px-space-lg py-space-sm text-body-sm">
-              <span class="text-on-surface-variant"><span class="font-semibold uppercase tracking-wide text-on-surface">Audit engine:</span> <span id="why-engine"></span></span>
+              <span class="text-on-surface-variant"><span class="font-semibold text-on-surface">Scored by:</span> <span id="why-engine"></span></span>
               <span class="text-on-surface-variant" id="why-weights"></span>
             </div>
             <div class="min-h-0 flex-1 overflow-y-auto px-space-lg pt-space-lg" id="why-body"></div>
@@ -492,9 +492,9 @@ function renderWhyModal() {
   document.getElementById("why-body").innerHTML =
     (requirements ? renderRequirementsPane(breakdown) : renderPillars(breakdown))
     + `<section class="mb-space-lg border-t border-surface-container-high pt-space-md">
-         <h4 class="mb-space-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Matched requirements</h4>
+         <h4 class="mb-space-sm text-label-md font-semibold text-on-surface-variant">Matched requirements</h4>
          <div class="mb-space-md flex flex-wrap gap-1.5">${chipList(matched, "bg-emerald-50 text-emerald-800")}</div>
-         <h4 class="mb-space-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Missing requirements</h4>
+         <h4 class="mb-space-sm text-label-md font-semibold text-on-surface-variant">Missing requirements</h4>
          <div class="flex flex-wrap gap-1.5">${chipList(missing, "bg-error-container/70 text-on-error-container")}</div>
        </section>`;
   document.getElementById("why-body").scrollTop = 0;

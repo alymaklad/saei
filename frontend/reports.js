@@ -76,14 +76,6 @@ function paintGaps() {
 
 // ---- sources ---------------------------------------------------------------------
 
-const SOURCE_NAMES = {
-  linkedin: "LinkedIn", greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby",
-  smartrecruiters: "SmartRecruiters", himalayas: "Himalayas", remotive: "Remotive",
-  jobicy: "Jobicy", workingnomads: "Working Nomads", weworkremotely: "We Work Remotely",
-  remoteok: "RemoteOK", generic: "Job boards & career pages", wuzzuf: "Wuzzuf", bayt: "Bayt",
-  gulftalent: "GulfTalent", tanqeeb: "Tanqeeb", wellfound: "Wellfound", simplyhired: "SimplyHired",
-  serpapi: "Google Jobs", watchlist: "Watchlist",
-};
 const SOURCE_COLORS = ["#9c3e1e", "#0a6a64", "#a06908", "#bc5633", "#86d4cc", "#8a726b", "#ddc0b8"];
 
 function paintSources() {
@@ -105,7 +97,7 @@ function paintSources() {
   }
   document.getElementById("source-total").textContent =
     `${plural(total, "role")} from ${plural(Object.keys(counts).length, "source")}.`;
-  const name = (s) => SOURCE_NAMES[s] || (s === "other" ? "Other" : s);
+  const name = (s) => (s === "other" ? "Other" : s === "generic" ? "Job boards & career pages" : sourceName(s));
   bar.innerHTML = entries.map(([s, n], i) =>
     `<span style="width:${(n / total) * 100}%;background:${SOURCE_COLORS[i % SOURCE_COLORS.length]}" title="${escapeHtml(name(s))}: ${n}"></span>`).join("");
   legend.innerHTML = entries.map(([s, n], i) => `

@@ -13,10 +13,9 @@
   <div class="flex flex-col">
 
     <!-- ============ AI provider ============ -->
-    <section id="llm" data-settings-panel="model" data-group="Assistant" data-icon="neurology" data-title="AI model" data-saves>
+    <section data-settings-panel="model" data-group="Assistant" data-icon="neurology" data-title="AI model" data-saves>
       <div class="mb-space-md flex items-end justify-between gap-space-md">
         <div>
-          <h2 class="text-headline-sm text-on-surface">AI Provider &amp; Model Architecture</h2>
           <p class="text-body-sm text-on-surface-variant">The model that extracts requirements, judges evidence, and rewrites your CV.</p>
         </div>
         <span id="save-message" class="save-message"></span>
@@ -127,31 +126,29 @@
 
     <!-- ============ Autonomy ============ -->
     <form id="auto-apply-form" data-settings-panel="autonomy" data-group="Assistant" data-icon="smart_toy" data-title="Autonomy" data-saves>
-      <div class="mb-space-md flex items-end justify-between gap-space-md" id="autonomy">
+      <div class="mb-space-md flex items-end justify-between gap-space-md">
         <div>
-          <h2 class="text-headline-sm text-on-surface">Application Protocol &amp; Autonomy</h2>
           <p class="text-body-sm text-on-surface-variant">How far Sa'ei goes on its own when a job clears your thresholds.</p>
         </div>
         <div class="flex flex-col items-end gap-1">
-          <span class="sa-chip" id="mode-guardrail-chip"></span>
           <span id="auto-apply-save-message" class="save-message"></span>
         </div>
       </div>
 
       <div class="flex flex-col gap-space-sm" id="mode-cards">
         <button type="button" data-mode="off" class="mode-card">
-          <span class="mode-card-head"><span class="mode-card-title">Autonomous (Requires Review)</span><span class="provider-badge">Safest</span></span>
-          <span class="mode-card-desc">Sa'ei finds, scores, and tailors, then pauses before submitting. Every application waits for your one-click confirmation on the Applications page.</span>
+          <span class="mode-card-head"><span class="mode-card-title">Drafts for review</span><span class="provider-badge">Safest</span></span>
+          <span class="mode-card-desc">Every application waits for you to send it.</span>
           <span class="mode-card-foot text-primary"><span class="ms text-[16px]">shield</span>Nothing is ever submitted without you</span>
         </button>
         <button type="button" data-mode="whitelist" class="mode-card">
-          <span class="mode-card-head"><span class="mode-card-title">Whitelisted Sources Only</span><span class="provider-badge">Recommended</span></span>
-          <span class="mode-card-desc">Submits on its own only on boards you've verified and added to <code>WHITELISTED_SOURCES</code>. Everywhere else it drafts for your review.</span>
+          <span class="mode-card-head"><span class="mode-card-title">Approved boards only</span><span class="provider-badge">Recommended</span></span>
+          <span class="mode-card-desc">Sends on boards you've approved; everything else waits for you.</span>
           <span class="mode-card-foot"><span class="ms text-[16px]">verified_user</span>Bounded by your vetted list</span>
         </button>
         <button type="button" data-mode="any" class="mode-card">
-          <span class="mode-card-head"><span class="mode-card-title">Fully Autonomous</span><span class="provider-badge">High velocity</span></span>
-          <span class="mode-card-desc">Applies wherever a job clears your threshold, ignoring the whitelist. Email applications go out when the switch below is on; sites with application forms still become drafts, since none has a submitter yet.</span>
+          <span class="mode-card-head"><span class="mode-card-title">Send automatically</span><span class="provider-badge">High velocity</span></span>
+          <span class="mode-card-desc">Sends wherever a job clears your threshold.</span>
           <span class="mode-card-foot"><span class="ms text-[16px]">bolt</span>Still honours Dry Run while it's on</span>
         </button>
       </div>
@@ -219,9 +216,8 @@
 
     <!-- ============ Matching ============ -->
     <form id="matching-form" data-settings-panel="matching" data-group="Assistant" data-icon="tune" data-title="Matching" data-saves>
-      <div class="mb-space-md flex items-end justify-between gap-space-md" id="matching">
+      <div class="mb-space-md flex items-end justify-between gap-space-md">
         <div>
-          <h2 class="text-headline-sm text-on-surface">Matching Criteria &amp; Thresholds</h2>
           <p class="text-body-sm text-on-surface-variant">How sensitive discovery is, and which jobs are worth scoring at all.</p>
         </div>
         <span id="matching-save-message" class="save-message"></span>
@@ -309,9 +305,8 @@
 
 
     <!-- ============ Channels ============ -->
-    <section id="channels" data-settings-panel="email" data-group="Connections" data-icon="mail" data-title="Email &amp; reports">
+    <section data-settings-panel="email" data-group="Connections" data-icon="mail" data-title="Email &amp; reports">
       <div class="mb-space-md">
-        <h2 class="text-headline-sm text-on-surface">Notifications &amp; Channels</h2>
         <p class="text-body-sm text-on-surface-variant">Where reports go, and the account applications are sent from. No spam.</p>
       </div>
       <div class="flex flex-col gap-space-sm">
@@ -381,9 +376,8 @@
     </section>
 
     <!-- ============ Help ============ -->
-    <section id="help" data-settings-panel="help" data-group="Sa'ei" data-icon="help" data-title="Help &amp; about">
+    <section data-settings-panel="help" data-group="Sa'ei" data-icon="help" data-title="Help &amp; about">
       <div class="mb-space-md">
-        <h2 class="text-headline-sm text-on-surface">Help &amp; about</h2>
         <p class="text-body-sm text-on-surface-variant">Guides, the source code, and where settings are kept.</p>
       </div>
       <div class="divide-y divide-surface-container overflow-hidden rounded-lg bg-surface-container-lowest shadow-soft">
@@ -407,7 +401,7 @@
     <div class="mt-space-xl flex items-center justify-end gap-space-lg border-t border-surface-container-high pt-space-lg" id="settings-save-bar">
       <span class="mr-auto text-body-sm text-on-surface-variant">The scheduler is a separate process — restart it (<code>run.bat</code>) to pick up changes.</span>
       <button type="button" class="text-label-md text-on-surface-variant hover:text-on-surface" onclick="location.reload()">Discard changes</button>
-      <button type="button" class="sa-btn-primary" id="save-all"><span class="ms text-[18px]">save</span>Save Changes</button>
+      <button type="button" class="sa-btn-primary" id="save-all"><span class="ms text-[18px]">save</span>Save changes</button>
     </div>
   </div>
 </main>

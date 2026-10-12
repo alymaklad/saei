@@ -145,3 +145,10 @@ def test_schedule_uses_the_configured_timezone(monkeypatch):
     assert str(sched.timezone) == "Africa/Cairo"
     assert {j.id for j in sched.get_jobs()} == {
         "daily_search_and_apply", "daily_report", "weekly_news"}
+
+
+def test_dashboard_files_are_revalidated_after_updates(hosted, monkeypatch):
+    tc, _, config = hosted
+    monkeypatch.setattr(config, "APP_PASSWORD", "")
+    assert tc.get("/ui.js").headers["cache-control"] == "no-cache"
+    assert "cache-control" not in tc.get("/api/health").headers

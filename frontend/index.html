@@ -12,20 +12,21 @@
 <main id="page">
   <div class="flex flex-col">
 
-    <div class="mb-space-xl flex flex-col justify-between gap-space-lg md:flex-row md:items-end">
-      <div class="flex flex-col">
-        <span class="sa-eyebrow mb-space-xs">Daily overview</span>
+    <header class="sa-page-head">
+      <div>
         <h1 class="sa-page-title"><span id="greeting">Welcome back.</span></h1>
-        <p class="mt-space-xs text-body-lg text-on-surface-variant">Here's where you are on your career journey.</p>
+        <p class="sa-page-desc" id="home-summary">Here's where your job search stands today.</p>
       </div>
-      <a href="search.html" class="sa-btn-primary self-start md:self-auto"><span class="ms text-[18px]">search</span>Search for jobs</a>
-    </div>
+      <div class="sa-page-actions">
+        <a href="search.html" class="sa-btn-primary"><span class="ms text-[18px]">search</span>Search for jobs</a>
+      </div>
+    </header>
 
     <!-- Active trajectory -->
-    <section class="sa-card sa-saei-wordmark sa-saei-wordmark-trajectory mb-space-xl">
+    <section class="sa-card mb-space-xl">
       <div class="mb-space-lg flex items-center justify-between">
-        <span class="flex items-center gap-2 text-label-sm uppercase tracking-wider text-on-surface-variant">
-          <span class="h-1.5 w-1.5 rounded-full bg-primary"></span>Active trajectory
+        <span class="flex items-center gap-2 text-label-md font-semibold text-on-surface-variant">
+          <span class="h-1.5 w-1.5 rounded-full bg-primary"></span>Your progress
         </span>
         <span class="text-label-md text-on-surface-variant" id="trajectory-stage"></span>
       </div>
@@ -35,34 +36,13 @@
       </div>
     </section>
 
-    <!-- Stats band -->
-    <section class="mb-space-xl grid grid-cols-4 gap-space-lg rounded-xl bg-surface-container-low px-space-lg py-space-lg" id="stats-grid">
-      <div>
-        <span class="text-headline-lg text-on-surface" id="stat-new">&mdash;</span>
-        <p class="text-body-md text-on-surface-variant">New this week</p>
-      </div>
-      <div>
-        <span class="text-headline-lg text-on-surface" id="stat-apps">&mdash;</span>
-        <p class="text-body-md text-on-surface-variant">Applications</p>
-      </div>
-      <div>
-        <span class="flex items-center gap-1 text-headline-lg text-on-surface"><span id="stat-avg-match">&mdash;</span><span class="ms text-[20px] text-tertiary">trending_up</span></span>
-        <p class="text-body-md text-on-surface-variant">Average match</p>
-      </div>
-      <div>
-        <span class="text-headline-lg text-on-surface" id="stat-gaps">&mdash;</span>
-        <p class="text-body-md text-on-surface-variant">Skills to improve</p>
-      </div>
-    </section>
 
     <!-- Recent applications -->
     <section class="mb-space-lg">
       <div class="mb-space-md flex items-end justify-between">
         <div>
-          <h2 class="text-headline-sm text-on-surface">Recent Applications</h2>
-          <p class="text-body-sm text-on-surface-variant">The latest roles your search runs found, and where each one stands.</p>
+          <h2 class="text-headline-sm text-on-surface">Recent applications</h2>
         </div>
-        <span class="text-label-sm uppercase tracking-widest text-on-surface-variant">Autonomous pipeline</span>
       </div>
       <div class="sa-list" id="recent-apps">
         <p class="sa-empty">Loading&hellip;</p>
@@ -76,7 +56,7 @@
     <div class="hidden items-center justify-between gap-space-md rounded-xl bg-surface-container-low px-space-lg py-space-md" id="insight">
       <p class="flex items-center gap-2 text-body-md text-on-surface-variant">
         <span class="ms text-[20px] text-tertiary">lightbulb</span>
-        <span><span class="text-tertiary">Sa'ei noticed:</span> <span class="text-on-surface" id="insight-text"></span></span>
+        <span class="text-on-surface" id="insight-text"></span>
       </p>
       <a href="reports.html" class="flex items-center gap-1 whitespace-nowrap text-label-md text-primary hover:underline">See skill gaps <span class="ms text-[18px]">arrow_forward</span></a>
     </div>

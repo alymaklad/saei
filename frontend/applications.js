@@ -69,10 +69,10 @@ function listRow(a) {
         : "border-transparent hover:bg-surface-container-low/60"}">
       <div class="min-w-0">
         <p class="truncate text-headline-sm text-on-surface">${escapeHtml(a.title || "Untitled role")}</p>
-        <p class="truncate text-body-sm text-on-surface-variant">${escapeHtml(a.company || "Unknown company")} <span class="text-outline-variant">•</span> ${escapeHtml(a.source || "—")}</p>
+        <p class="truncate text-body-sm text-on-surface-variant">${companyLine(a.company, a.source)}</p>
       </div>
       <span class="flex items-center gap-1.5 text-label-md text-on-surface">${p !== null
-        ? `<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>${p}% <span class="text-label-sm normal-case tracking-normal text-on-surface-variant">Match</span>`
+        ? `<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>${p}%`
         : `<span class="text-on-surface-variant">—</span>`}</span>
       <span>${statusPill(a)}</span>
       <span class="ms text-right text-on-surface-variant">arrow_forward</span>
@@ -100,32 +100,17 @@ document.getElementById("app-filter").addEventListener("input", () => { shown = 
 document.getElementById("sort-select").addEventListener("change", renderList);
 bindTabs(document.getElementById("status-tabs"), (f) => { statusFilter = f; shown = PAGE_SIZE; renderList(); });
 
+// The ranking factors' own names are engineering terms; say them plainly.
+function plainFactor(f) {
+  const label = f.label || "";
+  if (/semantic|similarity/i.test(label)) {
+    return { label: "Similar to your CV", evidence: "How closely this posting's wording matches your CV as a whole." };
+  }
+  return { label, evidence: f.evidence || "" };
+}
+
 // ---- side widgets --------------------------------------------------------------------
 
-function renderSideWidgets() {
-  const tailored = allApps.filter(hasTailored);
-  const banner = document.getElementById("alignment-banner");
-  banner.hidden = !tailored.length;
-  document.getElementById("alignment-text").textContent =
-    `${tailored.length} position${tailored.length === 1 ? " has" : "s have"} a tailored CV, re-scored against the posting.`;
-
-  // Per-source reach: how many roles each source produced and its best match.
-  const bySource = {};
-  allApps.forEach((a) => {
-    const s = a.source || "other";
-    bySource[s] = bySource[s] || { n: 0, best: null };
-    bySource[s].n += 1;
-    if (a.match_score != null && (bySource[s].best == null || a.match_score > bySource[s].best)) bySource[s].best = a.match_score;
-  });
-  const sources = Object.entries(bySource).sort((x, y) => y[1].n - x[1].n).slice(0, 3);
-  document.getElementById("source-scope").textContent = Object.keys(bySource).join(" · ");
-  document.getElementById("source-tiles").innerHTML = sources.map(([name, v], i) => `
-    <div class="rounded-lg bg-surface-container-low p-space-sm">
-      <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">${escapeHtml(name)}</span>
-      <p class="text-headline-sm text-on-surface">${v.n} Role${v.n === 1 ? "" : "s"}</p>
-      <p class="text-body-sm ${i === 0 ? "text-primary" : "text-on-surface-variant"}">Highest match: ${v.best == null ? "—" : pct(v.best) + "%"}</p>
-    </div>`).join("") || `<p class="sa-empty col-span-3">No sources yet.</p>`;
-}
 
 // ---- detail panel ----------------------------------------------------------------------
 
@@ -170,7 +155,7 @@ function renderDetail(a) {
 
   let primary;
   if (a.status === "pending_review" || a.status === "would_apply") {
-    primary = `<button type="button" class="sa-btn-primary flex-1 py-3" id="submit-btn"><span class="ms text-[18px]">send</span>${a.status === "would_apply" ? "Send it for real" : "Submit Application"}<span class="ms text-[18px]">arrow_forward</span></button>`;
+    primary = `<button type="button" class="sa-btn-primary flex-1 py-3" id="submit-btn"><span class="ms text-[18px]">send</span>${a.status === "would_apply" ? "Send it for real" : "Send application"}<span class="ms text-[18px]">arrow_forward</span></button>`;
   } else if (cvUrl) {
     primary = `<a href="${API_BASE}${cvUrl}" target="_blank" rel="noopener" class="sa-btn-primary flex-1 py-3"><span class="ms text-[18px]">download</span>Download tailored CV</a>`;
   } else {
@@ -184,8 +169,7 @@ function renderDetail(a) {
   panel.innerHTML = `
     <div class="mb-space-sm flex items-center justify-between gap-space-sm">
       <div class="flex min-w-0 flex-wrap items-center gap-1.5 text-body-sm text-on-surface-variant">
-        <span class="rounded bg-surface-container px-2 py-0.5 text-label-sm normal-case tracking-normal text-on-surface">${escapeHtml(a.company || "Unknown company")}</span>
-        <span>${escapeHtml(a.source || "")}</span>
+        <span>${companyLine(a.company, a.source)}</span>
       </div>
       ${statusLabel ? `<span class="whitespace-nowrap rounded px-2 py-0.5 text-label-sm normal-case tracking-normal ${statusCls}">${escapeHtml(statusLabel)}</span>` : ""}
     </div>
@@ -199,7 +183,7 @@ function renderDetail(a) {
     </div>
 
     <div class="flex items-center justify-between gap-space-sm">
-      <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Overview</span>
+      <span class="text-label-md font-semibold text-on-surface-variant">Overview</span>
       <button type="button" id="rescore-btn" title="Recompute this application's ATS score with the current scoring rules"
               class="flex items-center gap-1 text-label-md text-primary hover:underline disabled:opacity-50">
         <span class="ms text-[16px]">refresh</span>Re-score
@@ -215,15 +199,14 @@ function renderDetail(a) {
       <div class="rounded-lg bg-surface-container-low p-space-sm">
         <span class="text-label-sm normal-case tracking-normal text-on-surface-variant">Found</span>
         <p class="text-headline-md text-on-surface">${fmtDate(a.date_created)}</p>
-        <span class="text-label-sm normal-case tracking-normal text-on-surface-variant">via ${escapeHtml(a.source || "—")}</span>
+        <span class="text-label-sm normal-case tracking-normal text-on-surface-variant">via ${escapeHtml(sourceName(a.source) || "—")}</span>
       </div>
     </div>
 
     <div class="mb-space-lg flex items-center justify-between gap-space-md rounded-xl bg-surface-container-low p-space-md">
       <div>
-        <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Calibration score</span>
-        <p class="text-headline-md text-on-surface">${a.match_score != null ? pct(a.match_score) + "% Affinity" : "Not ranked"}</p>
-        <p class="text-body-sm text-on-surface-variant">How well this role fits your profile, from the ranking agent's weighted factors.</p>
+        <span class="text-label-md font-semibold text-on-surface-variant">Fit score</span>
+        <p class="text-headline-md text-on-surface">${a.match_score != null ? pct(a.match_score) + "% fit" : "Not ranked yet"}</p>
       </div>
       ${ring(a.match_score)}
     </div>
@@ -231,16 +214,16 @@ function renderDetail(a) {
     ${factors.length ? `
     <div class="mb-space-lg">
       <div class="mb-space-sm flex items-center justify-between">
-        <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Why this role? (deterministic reasoning)</span>
-        <span class="text-label-sm normal-case tracking-normal text-primary">${factors.length} core drivers</span>
+        <span class="text-label-md font-semibold text-on-surface-variant">Why this role fits</span>
+        <span class="text-label-sm normal-case tracking-normal text-primary">${factors.length} factors</span>
       </div>
       <div class="flex flex-col gap-space-sm">
         ${factors.map((f) => `
           <div class="flex gap-space-sm rounded-lg bg-surface-container-low p-space-sm">
             <span class="ms mt-0.5 text-[18px] ${(f.score || 0) >= 0.5 ? "text-secondary" : "text-error"}">${(f.score || 0) >= 0.5 ? "check_circle" : "error"}</span>
             <div>
-              <p class="text-label-md font-semibold text-on-surface">${escapeHtml(f.label)} · ${pct(f.score)}%</p>
-              <p class="text-body-sm text-on-surface-variant">${escapeHtml(f.evidence || "")}</p>
+              <p class="text-label-md font-semibold text-on-surface">${escapeHtml(plainFactor(f).label)} · ${pct(f.score)}%</p>
+              <p class="text-body-sm text-on-surface-variant">${escapeHtml(plainFactor(f).evidence)}</p>
             </div>
           </div>`).join("")}
       </div>
@@ -261,7 +244,7 @@ function renderDetail(a) {
 
     ${coverLetterCard(a)}
 
-    <p class="text-body-sm text-on-surface">Found ${fmtDate(a.date_created)}${a.date_applied ? ` · applied ${fmtDate(a.date_applied)}` : ""}</p>`;
+    ${a.date_applied ? `<p class="text-body-sm text-on-surface-variant">Applied ${fmtDate(a.date_applied)}</p>` : ""}`;
 
   if (a.apply_note || a.apply_email) {
     panel.querySelector("h2").insertAdjacentHTML("afterend", `
@@ -451,7 +434,6 @@ async function loadApplications(keepId) {
   document.querySelectorAll("[data-count]").forEach((el) => {
     el.textContent = allApps.filter((a) => matchesStatus(a, el.dataset.count)).length;
   });
-  renderSideWidgets();
 
   const params = new URLSearchParams(location.search);
   const wanted = keepId || Number(params.get("id"));

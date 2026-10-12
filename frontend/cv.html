@@ -11,19 +11,15 @@
 <body data-page="cv">
 <main id="page">
   <div class="flex flex-col">
-    <div class="mb-space-lg">
-      <h1 class="text-headline-lg text-on-surface">Curriculum Vitae</h1>
-      <p class="mt-1 text-body-md text-on-surface-variant">Your master source of truth, tailored for each high-match opportunity — reframed, never invented.</p>
-    </div>
+    <header class="sa-page-head">
+      <div>
+        <h1 class="sa-page-title">CV</h1>
+        <p class="sa-page-desc">Your CV, and the version tailored for each role.</p>
+      </div>
+    </header>
 
     <!-- Master CV -->
     <section class="sa-card relative mb-space-xl overflow-hidden p-space-lg">
-      <!-- Same treatment as the Reports synthesis card: a soft warm glow
-           top-right and the word sa'i (striving) watermarked bottom-right. -->
-      <div class="pointer-events-none absolute -right-16 -top-16 h-80 w-80 rounded-full bg-secondary-container/40 blur-3xl"></div>
-      <div class="pointer-events-none absolute bottom-12 right-0 select-none pr-space-lg opacity-10" aria-hidden="true">
-        <span class="block text-[140px] font-bold leading-none text-primary" lang="ar">سعي</span>
-      </div>
       <div class="relative" id="cv-current">
         <p class="sa-empty">Loading&hellip;</p>
       </div>
@@ -39,7 +35,6 @@
             <h2 class="text-headline-md text-on-surface">Tailored CVs</h2>
             <span class="rounded-full bg-secondary-container px-2 py-0.5 text-label-sm normal-case tracking-normal text-on-secondary-fixed-variant" id="cv-variant-chip"></span>
           </div>
-          <p class="text-body-md text-on-surface-variant">Job-specific versions, re-scored against each posting's own requirements.</p>
         </div>
         <div class="flex items-center gap-space-sm">
           <label class="relative">
@@ -57,16 +52,14 @@
         </div>
       </div>
       <div class="overflow-hidden rounded-xl bg-surface-container-lowest shadow-soft">
-        <div class="grid grid-cols-[1.2fr_1.2fr_1fr] gap-space-md bg-surface-container-low px-space-lg py-space-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-          <span>Target opportunity &amp; employer</span><span>Calibrated ATS optimization</span><span class="text-right">Generation &amp; action</span>
+        <div class="grid grid-cols-[1.2fr_1.2fr_1fr] gap-space-md bg-surface-container-low px-space-lg py-space-sm text-label-md font-semibold text-on-surface-variant">
+          <span>Role</span><span>ATS score, before and after tailoring</span><span class="text-right">Created</span>
         </div>
         <div class="divide-y divide-surface-container px-space-lg" id="cv-rewrites-body">
           <p class="sa-empty">Loading&hellip;</p>
         </div>
         <div class="flex items-center justify-between gap-space-md bg-surface-container-low px-space-lg py-space-sm">
-          <span class="flex items-center gap-2 text-body-sm text-on-surface-variant">
-            <span class="ms text-[16px]">auto_fix_high</span>Tailoring rewords your real experience toward each posting's requirements, and never invents a skill.
-          </span>
+          <span></span>
           <button type="button" class="sa-btn-ghost whitespace-nowrap" id="cv-rewrites-more" hidden></button>
         </div>
       </div>
@@ -78,8 +71,8 @@
         <span class="flex items-center gap-space-sm">
           <span class="sa-icon-badge"><span class="ms">science</span></span>
           <span>
-            <span class="block text-headline-sm text-on-surface">ATS &amp; Tailoring Bench</span>
-            <span class="block text-body-sm text-on-surface-variant">Score and tailor your CV against any job description you paste. Nothing is saved.</span>
+            <span class="block text-headline-sm text-on-surface">Test against a job description</span>
+            <span class="block text-body-sm text-on-surface-variant">Paste one to see your score and a tailored CV. Nothing is saved.</span>
           </span>
         </span>
         <span class="ms text-on-surface-variant transition-transform group-open:rotate-180">expand_more</span>

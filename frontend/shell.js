@@ -71,7 +71,8 @@
         </a>
         <nav class="flex flex-col gap-space-xs" aria-label="Main">${navHTML}</nav>
       </div>
-      <div class="relative">
+      <div class="relative flex flex-col gap-space-sm">
+      <div id="status-pill" class="pill pill-muted self-start">Checking status&hellip;</div>
       <div id="sa-account-menu" role="menu" hidden
            class="absolute bottom-full left-0 right-0 mb-space-xs overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lg ring-1 ring-surface-container">
         ${ACCOUNT_MENU}
@@ -96,31 +97,14 @@
       </div>
     </aside>`;
 
-  const header = `
-    <header class="fixed left-72 right-0 top-0 z-40 h-16 bg-background/80 shadow-soft backdrop-blur-xl">
-      <div class="flex h-16 w-full items-center justify-between px-space-lg">
-        <div class="flex items-center gap-space-sm text-on-surface-variant">
-          <span class="text-label-sm uppercase tracking-wider text-secondary">Workspace</span>
-          <span class="text-body-sm text-outline-variant">/</span>
-          <span class="text-label-md font-medium text-on-surface">${currentItem ? currentItem.label : "Sa'ei"}</span>
-        </div>
-        <div class="flex items-center gap-space-md">
-          <div id="status-pill" class="pill pill-muted">checking status&hellip;</div>
-          <a href="profile.html" class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary" aria-label="Profile">
-            <span class="ms text-[18px]">person</span>
-          </a>
-        </div>
-      </div>
-    </header>`;
 
   // Wrap the page's own <main id="page"> in the shell: a centred 72rem column
   // under a fixed 4rem header, as in the design.
   const main = document.getElementById("page");
   const wrap = document.createElement("div");
   wrap.className = "pl-72";
-  wrap.innerHTML = header;
   const column = document.createElement("div");
-  column.className = "min-h-screen w-full bg-background pt-16";
+  column.className = "min-h-screen w-full bg-background";
   main.classList.add("mx-auto", "max-w-6xl", "px-space-lg", "py-space-xl");
   main.parentNode.insertBefore(wrap, main);
   wrap.appendChild(column);
@@ -249,7 +233,7 @@
     main.parentNode.insertBefore(column, main);
     column.appendChild(main);
     main.classList.add("mx-auto", "max-w-3xl", "px-space-lg", "py-space-xl");
-    main.insertAdjacentHTML("afterbegin", '<h1 class="mb-space-lg text-headline-lg text-on-surface" id="settings-title">Settings</h1>');
+    main.insertAdjacentHTML("afterbegin", '<h1 class="sa-page-title mb-space-lg" id="settings-title">Settings</h1>');
 
     const links = [...document.querySelectorAll("[data-settings-link]")];
     const saveBar = document.getElementById("settings-save-bar");

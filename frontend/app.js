@@ -66,14 +66,15 @@ function paintTrajectory() {
 
 // ---- stats ---------------------------------------------------------------------------
 
+// The numbers, said once, as the line under the greeting.
 function paintStats() {
+  if (!apps.length) return;
   const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
-  document.getElementById("stat-new").textContent =
-    apps.filter((a) => a.date_created && new Date(a.date_created).getTime() >= weekAgo).length;
-  if (stats) document.getElementById("stat-apps").textContent = stats.total_applications;
+  const fresh = apps.filter((a) => a.date_created && new Date(a.date_created).getTime() >= weekAgo).length;
   const m = pct(average(apps.map((a) => a.match_score)));
-  document.getElementById("stat-avg-match").textContent = m === null ? "—" : `${m}%`;
-  document.getElementById("stat-gaps").textContent = gaps.length;
+  const parts = [`${fresh} new role${fresh === 1 ? "" : "s"} this week`];
+  if (m !== null) parts.push(`an average match of ${m}%`);
+  document.getElementById("home-summary").textContent = `${parts.join(", ")}.`;
 }
 
 // ---- recent applications -----------------------------------------------------------
@@ -93,7 +94,7 @@ function recentRow(a) {
       <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-label-md font-semibold text-on-surface">${escapeHtml(initialsOf(a.company || a.title).slice(0, 2))}</div>
       <div class="min-w-0 flex-1">
         <p class="truncate text-label-md font-semibold text-on-surface">${escapeHtml(a.title || "Untitled role")}</p>
-        <p class="truncate text-body-sm text-on-surface-variant">${escapeHtml(a.company || "Unknown company")} <span class="text-outline-variant">·</span> ${escapeHtml(a.source || "—")}</p>
+        <p class="truncate text-body-sm text-on-surface-variant">${companyLine(a.company, a.source)}</p>
       </div>
       ${p !== null ? `<span class="rounded-full bg-surface-container px-2.5 py-0.5 text-label-sm text-secondary">${p}% Match</span>` : ""}
       <span class="w-32 text-right text-body-sm text-on-surface">${escapeHtml(STATUS_WORDS[a.status] || (a.status || "").replace(/_/g, " "))}</span>

@@ -513,16 +513,16 @@ function snapshotCard(a) {
     <a href="applications.html?id=${a.id}" class="flex items-center gap-space-md rounded-xl bg-surface-container-lowest p-space-md shadow-soft transition-shadow hover:shadow-md">
       <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">${SOURCE_ICON[a.source] || "work"}</span></span>
       <div class="min-w-0 flex-1">
-        <p class="truncate text-headline-sm text-on-surface">${escapeHtml(a.title || "Untitled role")} <span class="text-label-sm normal-case tracking-normal text-on-surface-variant">· ${escapeHtml(a.company || "Unknown company")}</span></p>
+        <p class="truncate text-headline-sm text-on-surface">${escapeHtml(a.title || "Untitled role")}${a.company ? ` <span class="text-label-md text-on-surface-variant">· ${escapeHtml(a.company)}</span>` : ""}</p>
         <p class="flex flex-wrap items-center gap-x-2 text-body-sm text-on-surface-variant">
-          <span class="flex items-center gap-0.5"><span class="ms text-[16px]">travel_explore</span>${escapeHtml(a.source || "—")}</span>
+          <span class="flex items-center gap-0.5"><span class="ms text-[16px]">travel_explore</span>${escapeHtml(sourceName(a.source) || "—")}</span>
           <span>·</span><span>${timeAgo(a.date_created)}</span>
           ${a.ats_score != null ? `<span>·</span><span class="font-mono text-label-sm normal-case tracking-normal">ATS ${pct(hasTailored(a) ? a.tailored_ats_score : a.ats_score)}%</span>` : ""}
         </p>
       </div>
       <div class="text-right">
         <p class="text-headline-md ${tone}">${p === null ? "—" : p + "%"}</p>
-        <p class="text-label-sm uppercase tracking-wider text-on-surface-variant">Match</p>
+        <p class="text-label-md font-semibold text-on-surface-variant">Match</p>
       </div>
       <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant"><span class="ms text-[18px]">chevron_right</span></span>
     </a>`;
@@ -533,7 +533,7 @@ async function loadSnapshots() {
   try {
     const apps = await getJSON("/api/applications?limit=50");
     const best = sortApplicationsBy(apps, "match_score").slice(0, 5);
-    document.getElementById("snap-chip").textContent = best.length ? `Top ${best.length}` : "";
+    const chip = document.getElementById("snap-chip"); if (chip) chip.remove();
     el.innerHTML = best.length ? best.map(snapshotCard).join("")
       : `<p class="sa-empty">Nothing found yet — run a search.</p>`;
   } catch (e) {

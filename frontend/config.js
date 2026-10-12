@@ -62,11 +62,12 @@ async function loadNavStatus() {
   let text, cls;
   try {
     const status = await getJSON("/api/status");
-    [text, cls] = status.dry_run
-      ? ["Dry run · nothing is sent", "pill pill-warn"]
-      : ["Autonomous mode · Active", "pill pill-ok"];
+    if (status.dry_run) [text, cls] = ["Dry run: nothing is sent", "pill pill-warn"];
+    else if (status.auto_apply_mode === "any") [text, cls] = ["Sends applications automatically", "pill pill-ok"];
+    else if (status.auto_apply_mode === "whitelist") [text, cls] = ["Sends on approved boards only", "pill pill-ok"];
+    else [text, cls] = ["Drafts applications for your review", "pill pill-ok"];
   } catch (e) {
-    [text, cls] = ["Backend unreachable", "pill pill-muted"];
+    [text, cls] = ["Sa'ei isn't running", "pill pill-muted"];
   }
   paintNavStatus(pill, text, cls);
   try { sessionStorage.setItem(NAV_STATUS_KEY, JSON.stringify({ text, cls })); } catch (e) { /* private mode */ }

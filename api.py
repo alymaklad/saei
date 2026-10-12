@@ -96,6 +96,18 @@ def _credentials_match(header: str) -> bool:
 
 
 @app.middleware("http")
+async def revalidate_dashboard_files(request: Request, call_next):
+    """The dashboard's pages, scripts and styles change together. Without
+    this, a browser may reuse a cached script beside a newer page after an
+    update and break it; "no-cache" makes it check first (a quick 304 when
+    nothing changed)."""
+    response = await call_next(request)
+    if not request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response
+
+
+@app.middleware("http")
 async def require_login(request: Request, call_next):
     if (not config.APP_PASSWORD or request.method == "OPTIONS"
             or request.url.path == "/api/health"):
@@ -137,6 +149,7 @@ def health():
 def status():
     return {
         "dry_run": config.DRY_RUN,
+        "auto_apply_mode": config.AUTO_APPLY_MODE,
         "whitelisted_sources": sorted(config.WHITELISTED_SOURCES),
         "llm_provider": config.LLM_PROVIDER,
         # Whether the daily report / weekly news can be emailed.

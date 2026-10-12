@@ -11,20 +11,22 @@
 <body data-page="search">
 <main id="page">
   <div class="flex flex-col">
-    <div class="mb-space-lg flex items-end justify-between gap-space-lg">
+    <header class="sa-page-head">
       <div>
-        <h1 class="sa-page-title">Search Opportunities</h1>
-        <p class="sa-page-desc">Scan your job boards for roles that fit, matched against your profile before anything reaches you.</p>
+        <h1 class="sa-page-title">Search</h1>
+        <p class="sa-page-desc">Find roles that fit your profile.</p>
       </div>
-      <span class="flex items-center gap-2 whitespace-nowrap rounded-lg bg-surface-container-low px-space-md py-space-sm text-label-md text-on-surface">
-        <span class="ms text-[18px] text-on-surface-variant">tune</span>Target cadence: <span class="text-primary">Daily, 8:00</span>
-      </span>
-    </div>
+      <div class="sa-page-actions">
+        <span class="flex items-center gap-2 rounded-lg bg-surface-container-low px-space-md py-space-sm text-label-md text-on-surface">
+          <span class="ms text-[18px] text-on-surface-variant">schedule</span>Runs every day at 8:00
+        </span>
+      </div>
+    </header>
 
     <!-- Search card -->
-    <section class="sa-card sa-saei-wordmark sa-saei-wordmark-search mb-space-xl">
+    <section class="sa-card mb-space-xl">
       <form id="position-form">
-        <label for="position-input" class="mb-space-sm block text-label-sm uppercase tracking-wider text-on-surface-variant">What kind of role are you looking for?</label>
+        <label for="position-input" class="mb-space-sm block text-label-md font-semibold text-on-surface-variant">What role are you looking for?</label>
         <div class="flex items-stretch gap-space-sm">
           <label class="relative flex-1">
             <span class="ms pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
@@ -85,25 +87,25 @@
       <!-- Source management (from the old Job Boards panel) -->
       <div class="mt-space-md border-t border-surface-container pt-space-md" id="sources-panel" hidden>
         <div class="mb-space-sm flex items-center justify-between gap-space-md">
-          <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Always-on feeds</span>
+          <span class="text-label-md font-semibold text-on-surface-variant">Remote job feeds</span>
           <span class="text-body-sm text-on-surface-variant">Keyless remote-job APIs, queried on every search. Switch off any you don't want.</span>
         </div>
         <div class="grid grid-cols-3 gap-space-sm" id="feeds-body"></div>
 
         <div class="mb-space-sm mt-space-lg flex items-center justify-between gap-space-md">
-          <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">LinkedIn &amp; Google Jobs</span>
+          <span class="text-label-md font-semibold text-on-surface-variant">LinkedIn &amp; Google Jobs</span>
           <span class="text-body-sm text-on-surface-variant">LinkedIn searches each location once per role phrase. <b class="font-semibold">Worldwide</b> means remote only.</span>
         </div>
         <div class="flex flex-wrap items-center gap-space-sm" id="linkedin-body"></div>
 
         <div class="mb-space-sm mt-space-lg flex items-center justify-between gap-space-md">
-          <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Company boards</span>
+          <span class="text-label-md font-semibold text-on-surface-variant">Company boards</span>
           <span class="text-body-sm text-on-surface-variant">Read through each company's public hiring-system API (Greenhouse, Lever, Ashby, SmartRecruiters).</span>
         </div>
         <div class="grid grid-cols-3 gap-space-sm" id="boards-body"></div>
 
         <div class="mb-space-sm mt-space-lg flex items-center justify-between gap-space-md">
-          <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Job boards &amp; career pages</span>
+          <span class="text-label-md font-semibold text-on-surface-variant">Job boards &amp; career pages</span>
           <span class="text-body-sm text-on-surface-variant">Scraped best-effort, once per role phrase. Dimmed boards aren't searched until you add them.</span>
         </div>
         <div class="grid grid-cols-3 gap-space-sm" id="sites-body"></div>
@@ -151,10 +153,9 @@
     <section>
       <div class="mb-space-md flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <h2 class="text-headline-sm text-on-surface">Recent High-Signal Snapshots</h2>
+          <h2 class="text-headline-sm text-on-surface">Best recent matches</h2>
           <span class="rounded-full bg-secondary-container px-2 py-0.5 text-label-sm normal-case tracking-normal text-on-secondary-fixed-variant" id="snap-chip"></span>
         </div>
-        <span class="text-label-sm normal-case tracking-normal text-on-surface-variant">Best matches from recent runs</span>
       </div>
       <div class="flex flex-col gap-space-sm" id="snapshots">
         <p class="sa-empty">Loading&hellip;</p>

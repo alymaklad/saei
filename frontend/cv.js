@@ -45,12 +45,11 @@ function paintMaster() {
       <span>File <code class="rounded bg-surface-container px-1.5 py-0.5">${escapeHtml(status.filename)}</code></span><span>·</span>
       <span>${fmtBytes(status.size_bytes)}</span>
     </p>
-    <span class="mt-space-sm inline-block rounded bg-surface-container px-2 py-0.5 text-label-sm normal-case tracking-normal text-on-surface-variant">${escapeHtml((status.filename.split(".").pop() || "").toUpperCase())} · extracted into your profile</span>
     ${status.parse_error
       ? `<p class="save-error mt-space-md">Could not read this file: ${escapeHtml(status.parse_error)}</p>`
       : `<p class="mt-space-md text-body-md text-on-surface">${escapeHtml(summary.slice(0, 420))}${summary.length > 420 ? "…" : ""}</p>`}
     ${skills.length ? `
-      <p class="mb-space-sm mt-space-lg text-label-sm uppercase tracking-wider text-on-surface-variant">Synthesized competencies</p>
+      <p class="mb-space-sm mt-space-lg text-label-md font-semibold text-on-surface-variant">Key skills</p>
       <div class="flex flex-wrap gap-space-sm">${skills.map((s) => `<span class="rounded bg-surface-container px-2.5 py-1 text-body-md text-on-surface">${escapeHtml(s)}</span>`).join("")}</div>` : ""}
     <div class="mt-space-lg flex flex-wrap items-center gap-space-md">
       <a href="${API_BASE}${status.file_url}" target="_blank" rel="noopener" class="sa-btn bg-surface-container-lowest"><span class="ms text-[18px]">visibility</span>View CV</a>
@@ -164,7 +163,7 @@ function liftBar(r) {
       <div class="absolute inset-y-0 ${up ? "bg-secondary" : "bg-error"}" style="left:${lo}%;width:${hi - lo}%"></div>
     </div>
     <div class="flex items-center justify-between text-label-sm normal-case tracking-normal text-on-surface-variant">
-      <span>Baseline</span><span class="${up ? "text-secondary" : "text-error"}">${up ? "+" : ""}${t - o} pts ${up ? "lift" : "drop"}</span>
+      <span></span><span class="${up ? "text-secondary" : "text-error"}">${up ? "+" : ""}${t - o} points</span>
     </div>`;
 }
 
@@ -175,12 +174,12 @@ function rewriteRow(r) {
         <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">apartment</span></span>
         <div class="min-w-0">
           <p class="truncate text-headline-sm text-on-surface">${escapeHtml(r.job_title || "Untitled role")}</p>
-          <p class="truncate text-body-sm text-on-surface-variant">${escapeHtml(r.company || "Unknown company")}</p>
+          <p class="truncate text-body-sm text-on-surface-variant">${escapeHtml(r.company || "Company not listed")}</p>
         </div>
       </div>
       <div>${liftBar(r)}</div>
       <div class="flex items-center justify-end gap-space-md">
-        <span class="text-body-sm text-on-surface-variant">Created ${escapeHtml(timeAgo(r.date_created))}</span>
+        <span class="whitespace-nowrap text-body-sm text-on-surface-variant">${escapeHtml(timeAgo(r.date_created))}</span>
         ${r.tailored_ats_breakdown || r.ats_breakdown
           ? `<button type="button" class="text-label-md text-on-surface-variant hover:text-primary" onclick="openWhyModalForRewrite(${r.application_id})" title="Compare the two scores requirement by requirement">Compare</button>` : ""}
         <a href="${API_BASE}${r.download_url}" target="_blank" rel="noopener" class="flex items-center gap-1 whitespace-nowrap text-label-md text-primary hover:underline">View tailored CV <span class="ms text-[18px]">arrow_forward</span></a>

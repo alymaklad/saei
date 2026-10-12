@@ -678,11 +678,11 @@ function applyOrder() {
     if (down) down.disabled = i === order.length - 1;
   });
 
-  document.getElementById("section-count").textContent = `${order.length + 1} sections total`;
+  (document.getElementById("section-count") || {}).textContent = `${order.length + 1} sections total`;
 
   const custom = order.join("|") !== recommendedOrder().join("|");
   document.getElementById("order-note-lead").textContent =
-    custom ? "Custom order — the recommended one is:" : "Recommended order.";
+    custom ? "Your own order. Recommended:" : "Recommended order:";
   document.getElementById("order-reset").hidden = !custom;
 }
 

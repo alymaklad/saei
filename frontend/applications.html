@@ -11,10 +11,12 @@
 <body data-page="applications">
 <main id="page">
   <div class="flex flex-col">
-    <div class="mb-space-lg">
-      <h1 class="sa-page-title">Applications</h1>
-      <p class="sa-page-desc">Track, review, and send tailored applications — every score explained requirement by requirement.</p>
-    </div>
+    <header class="sa-page-head">
+      <div>
+        <h1 class="sa-page-title">Applications</h1>
+        <p class="sa-page-desc">Every role Sa'ei found, and what's ready to send.</p>
+      </div>
+    </header>
 
     <!-- Apply from a link: one posting through the same pipeline a search runs -->
     <section class="sa-card mb-space-lg p-space-md">
@@ -55,8 +57,8 @@
       <!-- List -->
       <div class="col-span-7 flex flex-col gap-space-md">
         <div class="overflow-hidden rounded-xl bg-surface-container-lowest shadow-soft">
-          <div class="grid grid-cols-[1fr_7rem_9rem_2.5rem] gap-space-sm bg-surface-container-low px-space-md py-space-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
-            <span>Role &amp; entity</span><span>Signal</span><span>Status</span><span class="text-right">Action</span>
+          <div class="grid grid-cols-[1fr_7rem_9rem_2.5rem] gap-space-sm bg-surface-container-low px-space-md py-space-sm text-label-md font-semibold text-on-surface-variant">
+            <span>Role</span><span>Match</span><span>Status</span><span class="sr-only">Open</span>
           </div>
           <div id="app-list" class="divide-y divide-surface-container">
             <p class="sa-empty">Loading&hellip;</p>
@@ -67,24 +69,6 @@
           </div>
         </div>
 
-        <a href="cv.html" class="flex items-center justify-between gap-space-md rounded-xl bg-surface-container-low px-space-md py-space-md hover:bg-surface-container" id="alignment-banner" hidden>
-          <div class="flex items-center gap-space-md">
-            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-fixed/70 text-primary"><span class="ms">auto_awesome</span></span>
-            <div>
-              <p class="text-label-md text-on-surface">Autonomous CV Alignment</p>
-              <p class="text-body-sm text-on-surface-variant" id="alignment-text"></p>
-            </div>
-          </div>
-          <span class="flex items-center gap-0.5 whitespace-nowrap text-label-md text-primary">Review in CV <span class="ms text-[18px]">chevron_right</span></span>
-        </a>
-
-        <section class="sa-card p-space-md">
-          <div class="mb-space-sm flex items-center justify-between">
-            <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Source alignment</span>
-            <span class="text-label-sm normal-case tracking-normal text-on-surface-variant" id="source-scope"></span>
-          </div>
-          <div class="grid grid-cols-3 gap-space-sm" id="source-tiles"></div>
-        </section>
       </div>
 
       <!-- Detail -->
@@ -101,7 +85,7 @@
     <form id="send-form" class="flex max-h-[calc(100vh-48px)] flex-col">
       <div class="flex items-start justify-between gap-space-md border-b border-surface-container px-space-lg py-space-md">
         <div>
-          <span class="sa-eyebrow">Submit application</span>
+          <span class="sa-eyebrow">Send application</span>
           <h3 class="text-headline-sm text-on-surface" id="send-title">&mdash;</h3>
         </div>
         <button type="button" class="modal-close" id="send-close" aria-label="Close">&times;</button>
@@ -109,9 +93,9 @@
       <div class="flex flex-col gap-space-md overflow-y-auto px-space-lg py-space-md">
         <p class="hidden rounded-lg bg-tertiary-fixed/60 px-space-md py-space-sm text-body-sm text-on-tertiary-fixed-variant" id="gmail-warning"></p>
         <div class="grid grid-cols-[4.5rem_1fr] items-center gap-space-sm">
-          <label for="to-email" class="text-label-sm uppercase tracking-wider text-on-surface-variant">To</label>
+          <label for="to-email" class="text-label-md font-semibold text-on-surface-variant">To</label>
           <input type="text" id="to-email" class="sa-input font-mono" placeholder="hiring@company.com" required>
-          <label for="subject" class="text-label-sm uppercase tracking-wider text-on-surface-variant">Subject</label>
+          <label for="subject" class="text-label-md font-semibold text-on-surface-variant">Subject</label>
           <input type="text" id="subject" class="sa-input font-semibold" required>
         </div>
         <textarea id="body" rows="9" class="sa-input resize-y leading-6" required></textarea>

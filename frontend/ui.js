@@ -2,6 +2,26 @@
 // Kept to presentation only: every number shown comes straight from the API
 // response the caller passes in.
 
+// Where a role came from, by the name people know it by.
+const SOURCE_NAMES = {
+  linkedin: "LinkedIn", greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby",
+  smartrecruiters: "SmartRecruiters", himalayas: "Himalayas", remotive: "Remotive",
+  jobicy: "Jobicy", workingnomads: "Working Nomads", weworkremotely: "We Work Remotely",
+  remoteok: "RemoteOK", generic: "Job board", wuzzuf: "Wuzzuf", bayt: "Bayt",
+  gulftalent: "GulfTalent", tanqeeb: "Tanqeeb", wellfound: "Wellfound", simplyhired: "SimplyHired",
+  serpapi: "Google Jobs", watchlist: "Watchlist", link: "Pasted link",
+};
+
+function sourceName(source) {
+  if (!source) return "";
+  return SOURCE_NAMES[source] || source.charAt(0).toUpperCase() + source.slice(1);
+}
+
+/** "Company · Source", or just the source when the company isn't known. */
+function companyLine(company, source) {
+  return [company, sourceName(source)].filter(Boolean).map(escapeHtml).join(' <span class="text-outline-variant">·</span> ');
+}
+
 function fmtDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -168,7 +188,7 @@ function matchBreakdownTiles(mb) {
           <span class="flex items-center gap-1 text-label-sm font-bold">${p}%<span class="ms text-[16px]">${icon}</span></span>
         </div>
         <span class="text-label-sm text-on-surface-variant">${escapeHtml(c.evidence || "")}</span>
-        <span class="mt-1 text-[10px] uppercase tracking-wider text-outline">weight ${Math.round((c.weight || 0) * 100)}%</span>
+        <span class="mt-1 text-[11px] text-outline">weight ${Math.round((c.weight || 0) * 100)}%</span>
       </div>`;
   }).join("");
 }
