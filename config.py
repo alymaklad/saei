@@ -791,6 +791,12 @@ SEARCH_REPORT_DIR = os.getenv("SEARCH_REPORT_DIR", "data/search_reports")
 # 0 = keep everything.
 SEARCH_REPORT_KEEP = _int("SEARCH_REPORT_KEEP", 30)
 
+# Weekly news digest (Mondays 09:00). Topic: blank = the professional title on
+# your profile ("AI Engineer"); set it to follow something narrower, e.g.
+# "LLM agents, RAG". Also editable in Settings -> Email & reports.
+NEWS_TOPIC = os.getenv("NEWS_TOPIC", "").strip()
+NEWS_MAX_ARTICLES = _int("NEWS_MAX_ARTICLES", 15)
+
 # Safety
 DRY_RUN = _bool("DRY_RUN", True)
 

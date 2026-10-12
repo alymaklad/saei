@@ -226,6 +226,23 @@ def skill_gaps(limit: int = 20):
     return [{"skill": skill, "count": count} for skill, count in counts.most_common(limit)]
 
 
+class NewsTopic(BaseModel):
+    topic: str = ""
+
+
+@app.get("/api/news/topic")
+def get_news_topic():
+    from agents.news_agent import news_topic
+    return {"topic": news_topic(), "custom": bool(config.NEWS_TOPIC)}
+
+
+@app.post("/api/news/topic")
+def set_news_topic(body: NewsTopic):
+    """The weekly digest's topic. Blank = follow your profile title."""
+    _apply_env({"NEWS_TOPIC": body.topic.strip()[:120] or None})
+    return get_news_topic()
+
+
 @app.get("/api/news")
 def news(limit: int = 5):
     with get_session() as session:

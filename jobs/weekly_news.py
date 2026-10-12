@@ -2,14 +2,14 @@
 import config
 from db import get_session, init_db
 from models import NewsDigest, ReportLog
-from agents.news_agent import fetch_news, summarize_news
+from agents.news_agent import fetch_news, news_topic, summarize_news
 from agents.reporter_agent import send_report
 
-DEFAULT_FIELD = "software engineering"
-
-
-def run_weekly_news_digest(field: str = DEFAULT_FIELD):
+def run_weekly_news_digest(field: str | None = None):
+    """`field` overrides the topic for one run; normally it comes from
+    news_topic() -- your NEWS_TOPIC setting, else your profile title."""
     init_db()
+    field = field or news_topic()
     articles = fetch_news(field)
     summary = summarize_news(field, articles)
     report_text = f"Weekly news digest ({field}):\n\n{summary}"

@@ -67,7 +67,8 @@ async function loadNews() {
       return;
     }
     const d = digests[0];
-    box.textContent = d.content;
+    box.innerHTML = escapeHtml(d.content).replace(/https?:\/\/[^\s<]+/g, (url) =>
+      `<a class="text-primary underline" href="${url}" target="_blank" rel="noopener">${url.length > 60 ? `${url.slice(0, 57)}…` : url}</a>`);
     document.getElementById("digest-date").textContent =
       `${d.field ? d.field + " · " : ""}${d.date_created ? fmtDate(d.date_created) : ""}`;
     toggle.addEventListener("click", () => box.classList.toggle("hidden"));
