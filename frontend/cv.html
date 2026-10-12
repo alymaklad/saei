@@ -14,7 +14,7 @@
     <header class="sa-page-head">
       <div>
         <h1 class="sa-page-title">CV</h1>
-        <p class="sa-page-desc">Your CV, and the version tailored for each role.</p>
+        <p class="sa-page-desc">Your CV and its tailored versions.</p>
       </div>
     </header>
 
@@ -28,75 +28,44 @@
     </section>
 
     <!-- Tailored CVs -->
-    <section class="mb-space-xl">
-      <div class="mb-space-md flex items-end justify-between gap-space-md">
-        <div>
-          <div class="flex items-center gap-2">
-            <h2 class="text-headline-md text-on-surface">Tailored CVs</h2>
-            <span class="rounded-full bg-secondary-container px-2 py-0.5 text-label-sm normal-case tracking-normal text-on-secondary-fixed-variant" id="cv-variant-chip"></span>
-          </div>
-        </div>
+    <section class="mb-space-xl" aria-labelledby="tailored-h">
+      <div class="mb-space-md flex flex-wrap items-end justify-between gap-space-md">
+        <h2 class="text-headline-sm text-on-surface" id="tailored-h">Tailored CVs <span class="text-label-md text-on-surface-variant" id="cv-variant-chip"></span></h2>
         <div class="flex items-center gap-space-sm">
-          <label class="relative">
-            <span class="ms pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
-            <input type="text" id="cv-filter" class="sa-input w-56 bg-surface-container-lowest py-2 pl-9" placeholder="Filter role or company&hellip;">
-          </label>
-          <span class="text-label-md text-on-surface-variant">Sort:</span>
+          <input type="search" id="cv-filter" class="sa-input w-48 bg-surface-container-lowest py-1.5" placeholder="Filter" aria-label="Filter by role or company">
           <div class="sa-select-wrap">
-            <select id="cv-sort" class="sa-select bg-surface-container py-1.5 text-label-md" aria-label="Sort">
-              <option value="date">Most recent</option>
-              <option value="lift">Biggest lift</option>
-              <option value="score">Highest tailored ATS</option>
+            <select id="cv-sort" class="sa-select bg-surface-container-lowest py-1.5 text-label-md" aria-label="Sort">
+              <option value="date">Newest</option>
+              <option value="lift">Biggest gain</option>
+              <option value="score">Highest score</option>
             </select>
           </div>
         </div>
       </div>
-      <div class="overflow-hidden rounded-xl bg-surface-container-lowest shadow-soft">
-        <div class="grid grid-cols-[1.2fr_1.2fr_1fr] gap-space-md bg-surface-container-low px-space-lg py-space-sm text-label-md font-semibold text-on-surface-variant">
-          <span>Role</span><span>ATS score, before and after tailoring</span><span class="text-right">Created</span>
-        </div>
-        <div class="divide-y divide-surface-container px-space-lg" id="cv-rewrites-body">
-          <p class="sa-empty">Loading&hellip;</p>
-        </div>
-        <div class="flex items-center justify-between gap-space-md bg-surface-container-low px-space-lg py-space-sm">
-          <span></span>
-          <button type="button" class="sa-btn-ghost whitespace-nowrap" id="cv-rewrites-more" hidden></button>
-        </div>
+      <ol class="sa-list" id="cv-rewrites-body"><li class="sa-empty">Loading&hellip;</li></ol>
+      <div class="mt-space-sm flex justify-end">
+        <button type="button" class="sa-btn-ghost" id="cv-rewrites-more" hidden></button>
       </div>
     </section>
 
-    <!-- Bench -->
-    <details class="group rounded-xl bg-surface-container-lowest shadow-soft" id="bench">
-      <summary class="flex cursor-pointer list-none items-center justify-between gap-space-md p-space-lg">
-        <span class="flex items-center gap-space-sm">
-          <span class="sa-icon-badge"><span class="ms">science</span></span>
-          <span>
-            <span class="block text-headline-sm text-on-surface">Test against a job description</span>
-            <span class="block text-body-sm text-on-surface-variant">Paste one to see your score and a tailored CV. Nothing is saved.</span>
-          </span>
-        </span>
-        <span class="ms text-on-surface-variant transition-transform group-open:rotate-180">expand_more</span>
-      </summary>
-      <div class="border-t border-surface-container p-space-lg">
-        <label for="debug-jd" class="sa-label">Job description</label>
-        <textarea id="debug-jd" rows="8" class="sa-input resize-y" placeholder="Paste the full job description here&hellip;"></textarea>
-        <div class="mt-3 flex flex-col gap-2">
+    <!-- Test -->
+    <section class="mb-space-lg" aria-labelledby="test-h">
+      <h2 class="mb-space-md text-headline-sm text-on-surface" id="test-h">Test against a job</h2>
+      <div class="sa-card">
+        <textarea id="debug-jd" rows="5" class="sa-input resize-y" aria-label="Job description" placeholder="Paste a job description&hellip;"></textarea>
+        <div class="mt-space-md flex flex-wrap items-center gap-x-space-lg gap-y-space-sm">
+          <button type="button" id="debug-run" class="sa-btn-primary"><span class="ms text-[18px]">play_arrow</span>Score my CV</button>
           <label class="flex items-center gap-2 text-body-sm text-on-surface">
-            <input type="checkbox" id="debug-force-rewrite" class="h-4 w-4 accent-[#9c3e1e]">
-            Force the rewrite even if the score passes the fit threshold
+            <input type="checkbox" id="debug-force-rewrite" class="h-4 w-4 accent-[#9c3e1e]" checked>Always tailor
           </label>
           <label class="flex items-center gap-2 text-body-sm text-on-surface">
-            <input type="checkbox" id="debug-render-pdf" class="h-4 w-4 accent-[#9c3e1e]">
-            Also render the PDF (checks formatting, not just the text)
+            <input type="checkbox" id="debug-render-pdf" class="h-4 w-4 accent-[#9c3e1e]" checked>Make the PDF
           </label>
-        </div>
-        <div class="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" id="debug-run" class="sa-btn-primary"><span class="ms text-[18px]">play_arrow</span>Run scoring &amp; tailoring</button>
           <span id="debug-message" class="save-message"></span>
         </div>
-        <div id="debug-results" class="mt-5" hidden></div>
+        <div id="debug-results" class="mt-space-lg" hidden></div>
       </div>
-    </details>
+    </section>
   </div>
 </main>
 

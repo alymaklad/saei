@@ -1253,7 +1253,6 @@ mark.hl-match {
 
 .debug-check input { margin: 0; }
 
-#debug-results { padding: 0 28px 28px; }
 
 .debug-block {
   border-top: 1px solid var(--border);
