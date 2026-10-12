@@ -1038,6 +1038,9 @@ def email_status():
         "oauth_authenticated": email_agent.oauth_authenticated(),
         "report_to": email_agent.report_recipient(),
         "report_to_custom": bool(config.REPORT_EMAIL_TO),
+        # Reports can be sent from an account of their own; applications never are.
+        "report_from": email_agent.report_sender_address(),
+        "report_from_separate": email_agent.report_sender_connected(),
         "dry_run": config.DRY_RUN,
     }
 
@@ -1056,8 +1059,31 @@ def email_report_to(body: ReportRecipient):
     return email_status()
 
 
+@app.post("/api/email/report-sender")
+def email_report_sender_authenticate():
+    """Sign in the Google account reports are sent from (opens Google's
+    account chooser, like Sign in with Google). Applications keep using
+    your own Gmail. A previous reports account is signed out first, so this
+    always opens the chooser rather than reusing it."""
+    email_agent.disconnect_report_sender()
+    _run_google_sign_in(config.GMAIL_REPORT_TOKEN_JSON)
+    return email_status()
+
+
+@app.delete("/api/email/report-sender")
+def email_report_sender_disconnect():
+    """Back to sending reports from your own Gmail."""
+    email_agent.disconnect_report_sender()
+    return email_status()
+
+
 @app.post("/api/email/authenticate")
 def email_authenticate():
+    _run_google_sign_in(None)
+    return {"authenticated": True}
+
+
+def _run_google_sign_in(token_path):
     if not email_agent.credentials_configured():
         raise HTTPException(
             400,
@@ -1069,7 +1095,7 @@ def email_authenticate():
         # Blocks this request until the new browser tab it opens completes
         # Google's consent screen -- expected for a local tool. Bounded by
         # GMAIL_AUTH_TIMEOUT_SECONDS so an abandoned tab can't hang forever.
-        email_agent.get_gmail_service()
+        email_agent.get_gmail_service(token_path)
     except RuntimeError as exc:   # headless host: see config.GMAIL_INTERACTIVE_AUTH
         raise HTTPException(400, str(exc))
     except google_auth_oauthlib.flow.WSGITimeoutError:
@@ -1080,7 +1106,6 @@ def email_authenticate():
         )
     except Exception as exc:  # noqa: BLE001 -- surface the real OAuth error to the UI
         raise HTTPException(400, f"Authentication failed: {exc}")
-    return {"authenticated": True}
 
 
 @app.get("/api/emails")

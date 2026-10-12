@@ -392,7 +392,16 @@
           <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container text-primary"><span class="ms">summarize</span></span>
           <div class="flex-1">
             <p class="flex items-center gap-2 text-label-md font-semibold text-on-surface">Reports by email <span class="rounded bg-surface-container px-1.5 py-0.5 text-label-sm normal-case tracking-normal" id="reports-chip">&hellip;</span></p>
-            <p class="text-body-sm text-on-surface-variant">The day's applications at 20:00 and the news digest on Mondays at 9:00, emailed through the Gmail connection above.</p>
+            <p class="text-body-sm text-on-surface-variant">The day's applications at 20:00 and the news digest on Mondays at 9:00.</p>
+            <div class="mt-space-sm">
+              <p class="sa-label">Send reports from</p>
+              <div class="flex flex-wrap items-center gap-space-sm">
+                <p class="flex-1 text-body-md text-on-surface" id="report-from">&hellip;</p>
+                <button type="button" class="sa-btn sa-btn-sm" id="report-from-btn">Use another account</button>
+                <button type="button" class="sa-btn-ghost sa-btn-sm" id="report-from-reset" hidden>Use my Gmail</button>
+              </div>
+              <p class="mt-1 text-body-sm" id="report-from-message"></p>
+            </div>
             <form id="report-to-form" class="mt-space-sm flex items-end gap-space-sm">
               <div class="flex-1">
                 <label for="report-to" class="sa-label">Send reports to</label>

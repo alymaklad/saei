@@ -591,6 +591,14 @@ function paintEmailStatus(s) {
   document.getElementById("connect-label").textContent = s.oauth_authenticated
     ? "Sign in with a different account" : "Sign in with Google";
 
+  document.getElementById("report-from").textContent = s.report_from
+    ? `${s.report_from}${s.report_from_separate ? "" : " (your Gmail)"}`
+    : "Your Gmail, once you sign in above";
+  document.getElementById("report-from-btn").textContent = s.report_from_separate
+    ? "Change account" : "Use another account";
+  document.getElementById("report-from-btn").disabled = !s.credentials_configured;
+  document.getElementById("report-from-reset").hidden = !s.report_from_separate;
+
   const reportsChip = document.getElementById("reports-chip");
   const note = document.getElementById("reports-note");
   const reportTo = document.getElementById("report-to");
@@ -632,6 +640,32 @@ connectBtn.addEventListener("click", async () => {
     emailMessage("connect-message", e.message || "Authentication failed.", false);
   } finally {
     connectBtn.disabled = !emailStatus?.credentials_configured;
+  }
+});
+
+// Reports can be sent from an account of their own (e.g. a project address);
+// applications always go from your Gmail above.
+document.getElementById("report-from-btn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  emailMessage("report-from-message", "Google's sign-in opened in a new tab — pick the account reports should come from.");
+  try {
+    paintEmailStatus(await postJSON("/api/email/report-sender", {}));
+    emailMessage("report-from-message", `Reports will be sent from ${emailStatus.report_from}.`, true);
+  } catch (err) {
+    emailMessage("report-from-message", err.message || "Sign-in failed.", false);
+    await loadGmailStatus();
+  } finally {
+    btn.disabled = !emailStatus?.credentials_configured;
+  }
+});
+
+document.getElementById("report-from-reset").addEventListener("click", async () => {
+  try {
+    paintEmailStatus(await deleteJSON("/api/email/report-sender"));
+    emailMessage("report-from-message", "Reports will be sent from your Gmail.", true);
+  } catch (err) {
+    emailMessage("report-from-message", err.message || "Could not change it.", false);
   }
 });
 

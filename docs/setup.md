@@ -106,7 +106,9 @@ news. Open **Settings → Email & reports** (from your name at the bottom of
 the sidebar) and click **Sign in with Google**. Sa'ei can only send email;
 it can't read your inbox. Details: [google-sign-in.md](google-sign-in.md).
 
-Reports go to your own address unless you set another one. While dry run is
+Reports go to your own address unless you set another one. They can also
+be sent from a different Google account than your applications: under
+**Send reports from**, click **Use another account** and sign in with it. While dry run is
 on, nothing is sent; reports only appear on the **Reports** page.
 
 ---

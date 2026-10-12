@@ -36,7 +36,10 @@ def gmail(monkeypatch, tmp_path):
     import config
     from agents import email_agent
     fake = FakeGmail()
-    monkeypatch.setattr(email_agent, "get_gmail_service", lambda: fake)
+    fake.accounts = []   # which sign-in each send used (None = your Gmail)
+    monkeypatch.setattr(email_agent, "get_gmail_service",
+                        lambda token_path=None: fake.accounts.append(token_path) or fake)
+    monkeypatch.setattr(config, "GMAIL_REPORT_TOKEN_JSON", str(tmp_path / "no_report_token.json"))
     monkeypatch.setattr(config, "REPORT_EMAIL_TO", "")
     monkeypatch.setattr(config, "APPLICANT_EMAIL", "")
     monkeypatch.setattr(config, "GMAIL_TOKEN_JSON", str(tmp_path / "no_token.json"))
@@ -62,6 +65,27 @@ def test_reports_go_to_your_own_inbox(gmail, tmp_path):
     assert result["to"] == "me@gmail.com" and result["gmail_message_id"] == "msg-1"
     message = _decoded(fake.sent[0])
     assert message["to"] == "me@gmail.com" and message["subject"] == "Sa'ei daily report"
+
+
+def test_reports_can_come_from_an_account_of_their_own(gmail, tmp_path):
+    config, email_agent, fake = gmail
+    _signed_in(config, tmp_path)
+    report_token = tmp_path / "report_token.json"
+    report_token.write_text(json.dumps({"token": "t", "refresh_token": "r", "client_id": "c",
+                                        "client_secret": "s", "account_email": "saei.opensource@gmail.com"}))
+    config.GMAIL_REPORT_TOKEN_JSON = str(report_token)
+
+    result = email_agent.send_report_email("Sa'ei daily report", "body")
+    assert result["from"] == "saei.opensource@gmail.com"
+    assert result["to"] == "me@gmail.com"                 # still to your own inbox
+    assert fake.accounts == [str(report_token)]
+
+    email_agent.send_application_email("hr@acme.com", "Application", "Hello", __file__)
+    assert fake.accounts[-1] is None                      # applications: your Gmail
+
+    email_agent.disconnect_report_sender()
+    assert not report_token.exists()
+    assert email_agent.report_sender_address() == "me@gmail.com"
 
 
 def test_reports_respect_dry_run_and_a_missing_sign_in(gmail):

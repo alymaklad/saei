@@ -236,6 +236,10 @@ GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "credenti
 SAEI_OAUTH_CLIENT_JSON = os.getenv("SAEI_OAUTH_CLIENT_JSON", "google_oauth_client.json")
 GMAIL_CREDENTIALS_JSON = os.getenv("GMAIL_CREDENTIALS_JSON", "credentials/gmail_credentials.json")
 GMAIL_TOKEN_JSON = os.getenv("GMAIL_TOKEN_JSON", "credentials/gmail_token.json")
+# Optional second sign-in that only the daily report and weekly news are sent
+# from (e.g. a project address), so they don't come from your own account.
+# Absent = reports are sent from the account above.
+GMAIL_REPORT_TOKEN_JSON = os.getenv("GMAIL_REPORT_TOKEN_JSON", "credentials/gmail_report_token.json")
 APPLICANT_NAME = os.getenv("APPLICANT_NAME", "")
 APPLICANT_EMAIL = os.getenv("APPLICANT_EMAIL", "")
 # Where the daily report and weekly news go. Blank = your own Gmail address.

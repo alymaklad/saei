@@ -7,6 +7,9 @@ That uses Sa'ei's shared Google app (google_oauth_client.json), so a user
 sets up nothing -- or a client file of their own, if they add one.
 
 Applications, the daily report and the weekly news all go through _send().
+Reports can go out from a second Google account of their own (Settings ->
+Email & reports -> "Send reports from"): its sign-in is kept in
+GMAIL_REPORT_TOKEN_JSON, and applications always use GMAIL_TOKEN_JSON.
 """
 import base64
 import json
@@ -65,10 +68,10 @@ def _email_from_id_token(id_token: str | None) -> str:
         return ""
 
 
-def oauth_account_email() -> str:
+def oauth_account_email(token_path: str | None = None) -> str:
     """The Google account "Sign in with Google" used, saved next to its token."""
     try:
-        with open(config.GMAIL_TOKEN_JSON, encoding="utf-8") as f:
+        with open(token_path or config.GMAIL_TOKEN_JSON, encoding="utf-8") as f:
             return json.load(f).get("account_email", "")
     except (OSError, ValueError):
         return ""
@@ -88,17 +91,38 @@ def report_recipient() -> str:
     return config.REPORT_EMAIL_TO or sender_address()
 
 
-def oauth_authenticated() -> bool:
+def report_sender_connected() -> bool:
+    """Whether reports have a Google account of their own to send from."""
+    return oauth_authenticated(config.GMAIL_REPORT_TOKEN_JSON)
+
+
+def report_sender_address() -> str:
+    """The address reports are sent from."""
+    if report_sender_connected():
+        return oauth_account_email(config.GMAIL_REPORT_TOKEN_JSON)
+    return sender_address()
+
+
+def disconnect_report_sender() -> None:
+    """Back to sending reports from your own Gmail."""
+    try:
+        os.remove(config.GMAIL_REPORT_TOKEN_JSON)
+    except FileNotFoundError:
+        pass
+
+
+def oauth_authenticated(token_path: str | None = None) -> bool:
     """
     Checks whether we already have a usable cached OAuth token, without
     triggering the interactive flow -- so the Settings page can show
     "Connected" without popping open a browser window just to check.
     """
-    if not os.path.exists(config.GMAIL_TOKEN_JSON):
+    token_path = token_path or config.GMAIL_TOKEN_JSON
+    if not os.path.exists(token_path):
         return False
     from google.oauth2.credentials import Credentials
     try:
-        creds = Credentials.from_authorized_user_file(config.GMAIL_TOKEN_JSON, SCOPES)
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     except (ValueError, OSError):
         return False
     return bool(creds and (creds.valid or creds.refresh_token))
@@ -107,8 +131,11 @@ def oauth_authenticated() -> bool:
 GMAIL_AUTH_TIMEOUT_SECONDS = 180  # give up if the user never completes the browser flow
 
 
-def get_gmail_service():
-    """
+def get_gmail_service(token_path: str | None = None):
+    """`token_path` picks which sign-in: your Gmail (the default) or the
+    reports' own account (config.GMAIL_REPORT_TOKEN_JSON).
+
+
     First run opens Google's "Sign in with Google" account chooser in a new
     browser tab (through Sa'ei's shared app, or your own client file -- see
     oauth_client()). The token is cached to GMAIL_TOKEN_JSON afterward, so
@@ -125,11 +152,12 @@ def get_gmail_service():
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 
+    token_path = token_path or config.GMAIL_TOKEN_JSON
     creds = None
-    if os.path.exists(config.GMAIL_TOKEN_JSON):
-        creds = Credentials.from_authorized_user_file(config.GMAIL_TOKEN_JSON, SCOPES)
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     if not creds or not creds.valid:
-        account_email = oauth_account_email()   # a refresh keeps who it was
+        account_email = oauth_account_email(token_path)   # a refresh keeps who it was
         if creds and creds.expired and creds.refresh_token:
             try:
                 creds.refresh(Request())
@@ -138,8 +166,8 @@ def get_gmail_service():
                 # 7-day limit for apps still in "Testing"). Set the token
                 # aside, so Settings shows Gmail as not connected rather than
                 # "Connected" over a sign-in that can never send again.
-                expired = f"{config.GMAIL_TOKEN_JSON}.expired"
-                os.replace(config.GMAIL_TOKEN_JSON, expired)
+                expired = f"{token_path}.expired"
+                os.replace(token_path, expired)
                 raise RuntimeError(
                     "Your Google sign-in has expired. Open Settings → Email & reports "
                     "and click Sign in with Google again."
@@ -151,7 +179,7 @@ def get_gmail_service():
             raise RuntimeError(
                 "Gmail isn't signed in on this server, and it can't open a browser "
                 "to sign in. Click Sign in with Google on your own computer, then copy "
-                f"{config.GMAIL_TOKEN_JSON} to the server."
+                f"{token_path} to the server."
             )
         else:
             client, _source = oauth_client()
@@ -172,11 +200,11 @@ def get_gmail_service():
                 ),
             )
             account_email = _email_from_id_token(getattr(creds, "id_token", None))
-        os.makedirs(os.path.dirname(config.GMAIL_TOKEN_JSON) or ".", exist_ok=True)
+        os.makedirs(os.path.dirname(token_path) or ".", exist_ok=True)
         token = json.loads(creds.to_json())
         if account_email:
             token["account_email"] = account_email
-        with open(config.GMAIL_TOKEN_JSON, "w") as f:
+        with open(token_path, "w") as f:
             json.dump(token, f)
     return build("gmail", "v1", credentials=creds)
 
@@ -230,13 +258,15 @@ def send_application_email(to_email: str, subject: str, body: str, cv_path: str,
 
 
 def send_report_email(subject: str, body: str, html: str | None = None) -> dict:
-    """The daily report or weekly news, to your own inbox (or REPORT_EMAIL_TO).
-    `html` is the designed version; `body` stays as the plain-text part for
-    mail apps that don't show HTML. Respects DRY_RUN like every other send."""
+    """The daily report or weekly news, to your own inbox (or REPORT_EMAIL_TO),
+    sent from the reports' own account when one is signed in, else from your
+    Gmail. `html` is the designed version; `body` stays as the plain-text part
+    for mail apps that don't show HTML. Respects DRY_RUN like every other send."""
     to_email = report_recipient()
+    token_path = config.GMAIL_REPORT_TOKEN_JSON if report_sender_connected() else None
     if config.DRY_RUN:
         return {"dry_run": True, "action": "send_report_email", "to": to_email, "subject": subject}
-    if not is_authenticated() or not to_email:
+    if not oauth_authenticated(token_path) or not to_email:
         return {"error": "Gmail isn't connected, so the report wasn't emailed. "
                          "Connect it on the Settings page."}
     message = MIMEMultipart("alternative") if html else MIMEMultipart()
@@ -245,12 +275,14 @@ def send_report_email(subject: str, body: str, html: str | None = None) -> dict:
     message.attach(MIMEText(body, "plain", "utf-8"))
     if html:
         message.attach(MIMEText(html, "html", "utf-8"))   # last part = preferred
-    return {"dry_run": False, "to": to_email, **_send(message)}
+    return {"dry_run": False, "to": to_email, "from": report_sender_address(),
+            **_send(message, token_path)}
 
 
-def _send(message: MIMEMultipart) -> dict:
-    """Sends a built message through the Gmail API."""
-    service = get_gmail_service()
+def _send(message: MIMEMultipart, token_path: str | None = None) -> dict:
+    """Sends a built message through the Gmail API, as the account signed in
+    at `token_path` (your Gmail by default)."""
+    service = get_gmail_service(token_path)
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
     result = service.users().messages().send(userId="me", body={"raw": raw}).execute()
     return {"gmail_message_id": result.get("id")}
