@@ -36,7 +36,7 @@ import re
 from langchain_core.messages import SystemMessage, HumanMessage
 
 import config
-from agents.llm import get_llm, no_think_prefix, prepare_system, visible_content
+from agents.llm import estimate_tokens, get_llm, no_think_prefix, prepare_system, visible_content
 
 # ---- pillar weights --------------------------------------------------------
 
@@ -350,14 +350,24 @@ def extract_requirements(job_description: str) -> dict:
     # prompt in the app, and a fixed local context truncates it silently --
     # which does not fail, it just quietly extracts the requirements from
     # whatever fitted. See agents/llm.context_for.
+    #
+    # Up to 4096, not a flat 2048: a requirement is ~60 tokens of JSON, and a
+    # 30-requirement posting plus gpt-oss's hidden reasoning measured 1,830
+    # tokens -- one longer posting away from being cut off mid-array, which
+    # read as "not the requested JSON". But the reservation still has to fit
+    # Groq's 8,000 tokens/minute together with the prompt, so a long posting
+    # gets less room (never under 2048); _salvage_requirements covers a cut.
     system = prepare_system(_REQUIREMENT_EXTRACTION_PROMPT)
-    llm = get_llm(temperature=0.0, max_tokens=2048,
+    prompt_tokens = estimate_tokens(system + (job_description or ""))
+    budget = max(2048, min(4096, 7600 - prompt_tokens))
+    llm = get_llm(temperature=0.0, max_tokens=budget,
                   prompt_text=system + (job_description or ""))
     resp = llm.invoke([
         SystemMessage(content=system),
         HumanMessage(content=no_think_prefix() + (job_description or "")),
     ])
-    parsed = _safe_json_object(visible_content(resp))
+    raw = visible_content(resp)
+    parsed = _safe_json_object(raw) or _salvage_requirements(raw)
     extracted = _normalize_requirements(parsed)
 
     # A posting with no requirements is not a posting. Every bucket goes
@@ -385,6 +395,28 @@ def _safe_json_object(raw: str) -> dict:
         return parsed if isinstance(parsed, dict) else {}
     except json.JSONDecodeError:
         return {}
+
+
+def _salvage_requirements(raw: str) -> dict:
+    """What a cut-off answer still holds: every requirement object that arrived
+    complete. An answer that ran out of tokens stops mid-array, so the whole
+    thing isn't JSON -- but the 25 requirements before the cut are fine, and
+    scoring on them beats failing the posting."""
+    requirements = []
+    for chunk in re.findall(r"\{[^{}]*\}", raw or ""):
+        try:
+            item = json.loads(chunk)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(item, dict) and item.get("name"):
+            requirements.append(item)
+    if not requirements:
+        return {}
+    years = re.search(r'"years_experience_required"\s*:\s*(\d+)', raw)
+    seniority = re.search(r'"seniority"\s*:\s*"(\w+)"', raw)
+    return {"requirements": requirements,
+            "years_experience_required": int(years.group(1)) if years else None,
+            "seniority": seniority.group(1) if seniority else None}
 
 
 def _normalize_requirements(parsed: dict) -> dict:

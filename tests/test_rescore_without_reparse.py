@@ -235,4 +235,13 @@ def test_extraction_calls_reserve_a_smaller_output_budget():
 
     with patch.object(ats_agent, "get_llm", fake_get_llm):
         ats_agent.extract_requirements("jd")
-    assert seen["max_tokens"] == 2048
+        assert seen["max_tokens"] == 4096   # room for a long requirement list
+        # A long posting gets less, so prompt + reservation stays under 8,000.
+        long_jd = "We need Python. " * 1000
+        try:
+            ats_agent.extract_requirements(long_jd)
+        except RuntimeError:
+            pass   # "{}" has no requirements; only the reservation matters here
+        system = ats_agent.prepare_system(ats_agent._REQUIREMENT_EXTRACTION_PROMPT)
+        assert 2048 <= seen["max_tokens"] < 4096
+        assert ats_agent.estimate_tokens(system + long_jd) + seen["max_tokens"] <= 8000
