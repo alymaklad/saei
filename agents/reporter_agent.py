@@ -14,8 +14,36 @@ def send_report(subject: str, report_text: str, html: str | None = None) -> dict
     return email_agent.send_report_email(subject, report_text, html=html)
 
 
-def build_daily_report(applications_today: list[dict]) -> str:
-    if not applications_today:
-        return "No applications submitted today."
-    lines = [f"- {a['title']} at {a['company']} ({a['status']})" for a in applications_today]
-    return "Today's applications:\n" + "\n".join(lines)
+def build_daily_report(data: dict) -> str:
+    """The plain-text daily report: the email's fallback part and what the
+    Reports page's log keeps. `data` is jobs.daily_report.collect_daily_report()."""
+    from agents.daily_email import STATUS_LABELS, headline, _pct
+
+    def role(r):
+        return f"{r['title']} at {r['company']}" if r["company"] else r["title"]
+
+    lines = [headline(data), ""]
+    sent_label = "Would send" if data["dry_run"] else "Sent"
+    lines.append(f"Roles found: {data['found']}  |  Scored: {data['scored']}  |  "
+                 f"CVs tailored: {data['tailored']}  |  {sent_label}: {data['sent']}")
+    if data["needs_you"]:
+        lines += ["", "Needs your attention:"]
+        lines += [f"- {role(r)} ({_pct(r['match'])} match)" for r in data["needs_you"][:5]]
+    if data["best"]:
+        lines += ["", "Today's best matches:"]
+        for r in data["best"]:
+            fit = _pct(r["ats"]) + (f" -> {_pct(r['tailored_ats'])}" if r["tailored_ats"] is not None else "")
+            status = STATUS_LABELS.get(r["status"], r["status"] or "")
+            lines.append(f"- {role(r)} ({r['board']}): {_pct(r['match'])} match, "
+                         f"CV fit {fit}, {status}" + (f"\n  {r['url']}" if r.get("url") else ""))
+    if data["skills"]:
+        lines += ["", "Skills that kept coming up: "
+                  + ", ".join(f"{s} ({n})" for s, n in data["skills"])]
+    if data["sources"]:
+        lines += ["", "Where today's roles came from: "
+                  + ", ".join(f"{name} ({n})" for name, n in data["sources"])]
+    if data["set_aside"]:
+        lines += ["", "Carried to tomorrow: " + ", ".join(
+            f"{n} ({reason})" for reason, n in data["set_aside"].items())]
+    lines += ["", f"This week so far: {sum(d['count'] for d in data['week'])} roles scored."]
+    return "\n".join(lines)
