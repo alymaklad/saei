@@ -230,11 +230,29 @@ def cv_attachment_name(full_name: str, job_title: str, cv_path: str) -> str:
     return "_".join(parts) + ext
 
 
+def applicant_reply_address() -> str:
+    """Where a recruiter's reply should go: the email on your profile (or
+    APPLICANT_EMAIL). Differs from sender_address() when applications are
+    sent from a separate account, such as a project address."""
+    try:
+        import profile_store
+        contact = (profile_store.load_profile_dict() or {}).get("contact") or {}
+        address = str(contact.get("email") or "").strip()
+    except Exception:  # noqa: BLE001 -- no profile yet: fall back to the setting
+        address = ""
+    return address or config.APPLICANT_EMAIL
+
+
 def send_application_email(to_email: str, subject: str, body: str, cv_path: str,
                            *, applicant_name: str = "", job_title: str = "") -> dict:
     """Respects the global DRY_RUN flag — logs intent instead of sending when true.
-    The CV goes out named Firstname_Lastname_JobTitle (cv_attachment_name)."""
+    The CV goes out named Firstname_Lastname_JobTitle (cv_attachment_name).
+    When the sending account isn't your own address, Reply-To carries yours,
+    so the recruiter's answer reaches you rather than the sending account."""
     attachment_name = cv_attachment_name(applicant_name, job_title, cv_path)
+    reply_to = applicant_reply_address()
+    if reply_to.casefold() == sender_address().casefold():
+        reply_to = ""
     if config.DRY_RUN:
         return {
             "dry_run": True,
@@ -243,11 +261,14 @@ def send_application_email(to_email: str, subject: str, body: str, cv_path: str,
             "subject": subject,
             "cv_path": cv_path,
             "attachment_name": attachment_name,
+            "reply_to": reply_to or None,
         }
 
     message = MIMEMultipart()
     message["to"] = to_email
     message["subject"] = subject
+    if reply_to:
+        message["Reply-To"] = reply_to
     message.attach(MIMEText(body))
 
     with open(cv_path, "rb") as f:

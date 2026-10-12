@@ -88,6 +88,18 @@ def test_reports_can_come_from_an_account_of_their_own(gmail, tmp_path):
     assert email_agent.report_sender_address() == "me@gmail.com"
 
 
+def test_applications_from_another_account_reply_to_you(gmail, tmp_path, monkeypatch):
+    config, email_agent, fake = gmail
+    _signed_in(config, tmp_path, email="saei.opensource@gmail.com")
+    monkeypatch.setattr(email_agent, "applicant_reply_address", lambda: "me@gmail.com")
+    email_agent.send_application_email("hr@acme.com", "Application", "Hello", __file__)
+    assert _decoded(fake.sent[-1])["Reply-To"] == "me@gmail.com"
+
+    monkeypatch.setattr(email_agent, "applicant_reply_address", lambda: "Saei.OpenSource@gmail.com")
+    email_agent.send_application_email("hr@acme.com", "Application", "Hello", __file__)
+    assert _decoded(fake.sent[-1])["Reply-To"] is None   # same account: no Reply-To
+
+
 def test_reports_respect_dry_run_and_a_missing_sign_in(gmail):
     config, email_agent, fake = gmail
     assert "error" in email_agent.send_report_email("s", "b")   # nobody signed in
