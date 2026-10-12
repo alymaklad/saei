@@ -27,7 +27,7 @@
     { page: "reports", href: "reports.html", icon: "insights", label: "Reports" },
   ];
 
-  const HELP_URL = "https://github.com/alymaklad/Saei#readme";
+  const HELP_URL = "https://github.com/alymaklad/saei#readme";
   const menuItem = (href, icon, label, extra = "") => `
     <a href="${href}" role="menuitem" ${extra}
        class="flex items-center gap-space-sm px-space-md py-2.5 text-label-md text-on-surface transition-colors hover:bg-surface-container-low">

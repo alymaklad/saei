@@ -27,7 +27,7 @@ import config
 
 HN_SEARCH = "https://hn.algolia.com/api/v1/search"
 REDDIT_TOP_RSS = "https://www.reddit.com/r/{sub}/top/.rss?t=week"
-USER_AGENT = "Saei-news-digest/1.0 (personal job-search assistant; github.com/alymaklad/Saei)"
+USER_AGENT = "Saei-news-digest/1.0 (personal job-search assistant; github.com/alymaklad/saei)"
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
 MIN_HN_POINTS = 30
 

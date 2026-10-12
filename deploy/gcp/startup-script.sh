@@ -10,7 +10,7 @@
 set -euo pipefail
 
 APP_DIR="/opt/job-agent"
-REPO_URL="https://github.com/alymaklad/Saei.git"
+REPO_URL="https://github.com/alymaklad/saei.git"
 BRANCH="main"
 RUN_USER="job-agent"
 ENV_FILE="$APP_DIR/.env"
