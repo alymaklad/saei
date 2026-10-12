@@ -796,6 +796,9 @@ SEARCH_REPORT_KEEP = _int("SEARCH_REPORT_KEEP", 30)
 # "LLM agents, RAG". Also editable in Settings -> Email & reports.
 NEWS_TOPIC = os.getenv("NEWS_TOPIC", "").strip()
 NEWS_MAX_ARTICLES = _int("NEWS_MAX_ARTICLES", 15)
+# Reddit communities for the digest's "On the Boards" section, e.g.
+# "MachineLearning,LocalLLaMA". Blank = a few picked from the topic.
+NEWS_SUBREDDITS = _list("NEWS_SUBREDDITS")
 
 # Safety
 DRY_RUN = _bool("DRY_RUN", True)

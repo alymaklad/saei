@@ -48,6 +48,47 @@ def _story(item: dict, lead: bool = False) -> str:
       {links_html}"""
 
 
+def _thread(post: dict) -> str:
+    # Hacker News threads carry their numbers; Reddit's feed has none, so its
+    # threads say which community they're from instead.
+    if post.get("points") is not None:
+        meta = f"{post['points']:,} points &middot; {post.get('comments') or 0:,} comments"
+    else:
+        meta = escape(post.get("community") or "")
+    return (f'<p style="margin:0 0 12px;font-family:{SERIF};font-size:14px;line-height:20px;">'
+            f'<a href="{escape(post["link"])}" style="color:{INK};text-decoration:none;font-weight:bold;">'
+            f'{escape(post["title"])}</a><br>'
+            f'<span style="font-family:{SANS};font-size:10px;letter-spacing:1px;color:{MUTED};'
+            f'text-transform:uppercase;">{meta}</span></p>')
+
+
+def _boards(community: dict) -> str:
+    """"On the Boards": Hacker News and Reddit threads, side by side --
+    their own titles and numbers, linked to the discussion."""
+    columns = [(label, posts) for label, posts in (("Hacker News", community.get("hacker_news") or []),
+                                                    ("Reddit", community.get("reddit") or [])) if posts]
+    if not columns:
+        return ""
+    cells = []
+    for i, (label, posts) in enumerate(columns):
+        side = ("padding:12px 16px 0 0;" if i == 0 else "padding:12px 0 0 16px;border-left:1px solid #cfc8b8;") \
+            if len(columns) == 2 else "padding:12px 0 0;"
+        cells.append(
+            f'<td class="col" width="{100 // len(columns)}%" valign="top" style="{side}">'
+            f'<p style="margin:0 0 10px;font-family:{SANS};font-size:11px;letter-spacing:1.5px;'
+            f'font-weight:bold;color:{ACCENT};">{label.upper()}</p>'
+            f'{"".join(_thread(p) for p in posts)}</td>')
+    return (f'<tr><td style="padding:22px 0 0;">'
+            f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'style="border-top:3px double {INK};">'
+            f'<tr><td colspan="{len(columns)}" style="padding:12px 0 0;">'
+            f'<p style="margin:0;font-family:{SERIF};font-size:22px;line-height:28px;font-weight:bold;'
+            f'color:{INK};">On the Boards</p>'
+            f'<p style="margin:2px 0 0;font-family:{SERIF};font-size:13px;font-style:italic;color:{MUTED};">'
+            f'What developers discussed this week.</p></td></tr>'
+            f'<tr>{"".join(cells)}</tr></table></td></tr>')
+
+
 def render_digest_email(digest: dict, *, edition: int = 1, today: date | None = None,
                         reader: str = "", app_url: str = "http://localhost:8001/") -> str:
     """The digest as a full HTML email document."""
@@ -103,6 +144,8 @@ def render_digest_email(digest: dict, *, edition: int = 1, today: date | None = 
                     f'<ol style="margin:0;padding-left:20px;font-family:{SERIF};font-size:13px;'
                     f'line-height:20px;color:{INK};">{sources}</ol></td></tr>') if sources else ""
 
+    boards_html = _boards(digest.get("community") or {})
+
     weekday = today.strftime("%A").upper()
     dateline = f"{weekday}, {today.day} {today.strftime('%B %Y').upper()}"
     greeting = f"Compiled for {escape(reader)} by Sa'ei" if reader else "Compiled by Sa'ei"
@@ -146,11 +189,12 @@ def render_digest_email(digest: dict, *, edition: int = 1, today: date | None = 
       {empty}
       {lead_html}
       {grid_html}
+      {boards_html}
       {sources_html}
       <tr><td style="padding-top:24px;">&nbsp;</td></tr>
       {rule}
       <tr><td align="center" style="padding:12px 0 4px;font-family:{SERIF};font-size:13px;line-height:20px;font-style:italic;color:{MUTED};">
-        {greeting} from this week's Google News headlines. Summaries stick to what the headlines say &mdash; open a story for the details.
+        {greeting} from this week's Google News headlines{" and the Hacker News and Reddit boards" if boards_html else ""}. Summaries stick to what the headlines say &mdash; open a story for the details.
       </td></tr>
       <tr><td align="center" style="padding:4px 0 12px;font-family:{SANS};font-size:11px;letter-spacing:1px;">
         <a href="{escape(app_url)}settings.html#email" style="color:{ACCENT};text-decoration:none;">CHANGE YOUR NEWS TOPIC</a>

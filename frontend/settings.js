@@ -615,27 +615,6 @@ connectBtn.addEventListener("click", async () => {
     await postJSON("/api/email/authenticate", {});
     emailMessage("connect-message", "Signed in.", true);
     await loadGmailStatus();
-
-// ---- weekly news topic ---------------------------------------------------------------
-
-function paintNewsTopic(t) {
-  const input = document.getElementById("news-topic");
-  input.value = t.custom ? t.topic : "";
-  input.placeholder = t.custom ? "" : `${t.topic} (from your profile)`;
-  document.getElementById("news-topic-note").textContent = t.custom
-    ? `Following “${t.topic}”. Clear the box and save to follow your profile title again.`
-    : `Following your profile title, “${t.topic}”. Type something narrower to change it, e.g. “LLM agents, RAG”.`;
-}
-
-getJSON("/api/news/topic").then(paintNewsTopic).catch(() => {});
-document.getElementById("news-topic-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  try {
-    paintNewsTopic(await postJSON("/api/news/topic", { topic: document.getElementById("news-topic").value }));
-  } catch (err) {
-    document.getElementById("news-topic-note").textContent = err.message || "Could not save.";
-  }
-});
   } catch (e) {
     emailMessage("connect-message", e.message || "Authentication failed.", false);
   } finally {
@@ -653,3 +632,30 @@ document.getElementById("report-to-form").addEventListener("submit", async (e) =
 });
 
 loadGmailStatus();
+
+// ---- weekly news: topic and Reddit communities -----------------------------------------
+
+function paintNewsTopic(t) {
+  const input = document.getElementById("news-topic");
+  input.value = t.custom ? t.topic : "";
+  input.placeholder = t.custom ? "" : `${t.topic} (from your profile)`;
+  document.getElementById("news-topic-note").textContent = t.custom
+    ? `Following “${t.topic}”. Clear the box and save to follow your profile title again.`
+    : `Following your profile title, “${t.topic}”. Type something narrower to change it, e.g. “LLM agents, RAG”.`;
+  const subs = document.getElementById("news-subreddits");
+  subs.value = t.subreddits_custom ? t.subreddits.join(", ") : "";
+  subs.placeholder = t.subreddits_custom ? "" : `${t.subreddits.join(", ")} (picked from your topic)`;
+}
+
+getJSON("/api/news/topic").then(paintNewsTopic).catch(() => {});
+document.getElementById("news-topic-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    paintNewsTopic(await postJSON("/api/news/topic", {
+      topic: document.getElementById("news-topic").value,
+      subreddits: document.getElementById("news-subreddits").value,
+    }));
+  } catch (err) {
+    document.getElementById("news-topic-note").textContent = err.message || "Could not save.";
+  }
+});

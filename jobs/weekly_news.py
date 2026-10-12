@@ -4,6 +4,7 @@ import config
 from db import get_session, init_db
 from models import NewsDigest, ReportLog
 from agents.news_agent import fetch_news, make_digest, news_topic
+from agents.community_news import community_text, fetch_community
 from agents.news_email import render_digest_email
 from agents.reporter_agent import send_report
 
@@ -23,7 +24,9 @@ def run_weekly_news_digest(field: str | None = None):
     field = field or news_topic()
     articles = fetch_news(field)
     digest = make_digest(field, articles)
-    summary = digest["text"]
+    # Hacker News and Reddit threads, shown as they are (no LLM).
+    digest["community"] = fetch_community(field)
+    summary = "\n\n".join(p for p in (digest["text"], community_text(digest["community"])) if p)
     report_text = f"Weekly news digest ({field}):\n\n{summary}"
 
     with get_session() as session:

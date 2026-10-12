@@ -11,6 +11,7 @@ import base64
 import importlib
 import json
 import os
+import re
 import secrets
 import threading
 from collections import Counter
@@ -228,18 +229,31 @@ def skill_gaps(limit: int = 20):
 
 class NewsTopic(BaseModel):
     topic: str = ""
+    subreddits: Optional[str] = None   # comma-separated; None = leave as is
 
 
 @app.get("/api/news/topic")
 def get_news_topic():
+    from agents.community_news import subreddits_for
     from agents.news_agent import news_topic
-    return {"topic": news_topic(), "custom": bool(config.NEWS_TOPIC)}
+    topic = news_topic()
+    return {"topic": topic, "custom": bool(config.NEWS_TOPIC),
+            "subreddits": subreddits_for(topic), "subreddits_custom": bool(config.NEWS_SUBREDDITS)}
 
 
 @app.post("/api/news/topic")
 def set_news_topic(body: NewsTopic):
-    """The weekly digest's topic. Blank = follow your profile title."""
-    _apply_env({"NEWS_TOPIC": body.topic.strip()[:120] or None})
+    """The weekly digest's topic (blank = follow your profile title) and the
+    Reddit communities for "On the Boards" (blank = picked from the topic)."""
+    updates = {"NEWS_TOPIC": body.topic.strip()[:120] or None}
+    if body.subreddits is not None:
+        subs = [s.strip().removeprefix("r/").strip("/") for s in body.subreddits.split(",")]
+        subs = [s for s in subs if s]
+        if any(not re.fullmatch(r"[A-Za-z0-9_]{2,21}", s) for s in subs):
+            raise HTTPException(400, "Reddit community names are letters, numbers and _ "
+                                     "(e.g. MachineLearning, LocalLLaMA).")
+        updates["NEWS_SUBREDDITS"] = ",".join(subs[:6]) or None
+    _apply_env(updates)
     return get_news_topic()
 
 
