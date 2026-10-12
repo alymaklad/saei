@@ -75,7 +75,7 @@
       ${desertScene()}
       <div id="status-pill" class="pill pill-muted self-start">Checking status&hellip;</div>
       <div id="sa-account-menu" role="menu" hidden
-           class="absolute bottom-full left-0 right-0 mb-space-xs overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lg ring-1 ring-surface-container">
+           class="absolute bottom-0 left-full ml-space-lg w-64 overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lg ring-1 ring-surface-container">
         ${ACCOUNT_MENU}
       </div>
       <button type="button" id="sa-account-btn" aria-haspopup="menu" aria-expanded="false"
@@ -93,7 +93,7 @@
             <span class="truncate text-label-sm normal-case tracking-normal text-on-surface-variant" id="sa-user-title">Set up from your CV</span>
           </div>
         </div>
-        <span class="ms text-[18px] text-on-surface-variant">unfold_more</span>
+        <span class="ms text-[18px] text-on-surface-variant">chevron_right</span>
       </button>
       </div>
     </aside>`;
