@@ -192,19 +192,22 @@ def send_application_email(to_email: str, subject: str, body: str, cv_path: str)
     return {"dry_run": False, **_send(message)}
 
 
-def send_report_email(subject: str, body: str) -> dict:
+def send_report_email(subject: str, body: str, html: str | None = None) -> dict:
     """The daily report or weekly news, to your own inbox (or REPORT_EMAIL_TO).
-    Respects DRY_RUN like every other send."""
+    `html` is the designed version; `body` stays as the plain-text part for
+    mail apps that don't show HTML. Respects DRY_RUN like every other send."""
     to_email = report_recipient()
     if config.DRY_RUN:
         return {"dry_run": True, "action": "send_report_email", "to": to_email, "subject": subject}
     if not is_authenticated() or not to_email:
         return {"error": "Gmail isn't connected, so the report wasn't emailed. "
                          "Connect it on the Settings page."}
-    message = MIMEMultipart()
+    message = MIMEMultipart("alternative") if html else MIMEMultipart()
     message["to"] = to_email
     message["subject"] = subject
-    message.attach(MIMEText(body))
+    message.attach(MIMEText(body, "plain", "utf-8"))
+    if html:
+        message.attach(MIMEText(html, "html", "utf-8"))   # last part = preferred
     return {"dry_run": False, "to": to_email, **_send(message)}
 
 

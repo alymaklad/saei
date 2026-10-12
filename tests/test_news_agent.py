@@ -81,3 +81,34 @@ def test_the_summary_ends_with_links_to_the_articles_it_cites(cfg, monkeypatch):
 
 def test_no_articles_says_so_plainly(cfg):
     assert "No news found for 'AI Engineer'" in news_agent.summarize_news("AI Engineer", [])
+
+
+# ---- the newspaper email -------------------------------------------------------------
+
+def test_the_weekly_email_is_a_newspaper_built_from_real_headlines():
+    from datetime import date
+    from agents import news_email
+    a = {"title": "Agents ship to production", "source": "The Verge", "link": "https://n.example/a"}
+    b = {"title": "New RAG benchmark", "source": "VentureBeat", "link": "https://n.example/b"}
+    c = {"title": "Chips & <things>", "source": "IEEE", "link": "https://n.example/c"}
+    digest = {"topic": "AI Engineer", "text": "x", "items": [
+        {"text": "Agents are reaching production.", "sources": [a]},
+        {"text": "RAG gets a benchmark.", "sources": [b]},
+        {"text": "A chip course launches.", "sources": [c]},
+        {"text": "One more story.", "sources": [a]},
+    ]}
+    html = news_email.render_digest_email(digest, edition=3, today=date(2026, 10, 12), reader="Aly")
+    assert "The Sa&#8217;ei Weekly" in html and "VOL. 1 &middot; NO. 3" in html
+    assert "MONDAY, 12 OCTOBER 2026" in html and "THIS WEEK IN &middot; AI ENGINEER" in html
+    assert "Agents ship to production" in html          # the article's own headline
+    assert 'href="https://n.example/b"' in html          # every story links out
+    assert "Chips &amp; &lt;things&gt;" in html and "<things>" not in html   # escaped
+    assert 'colspan="2"' in html                         # odd last story spans the row
+    assert "Compiled for Aly" in html
+    assert "<style" in html and "style=\"" in html       # inline styles for mail apps
+
+
+def test_a_week_without_news_still_renders_the_paper():
+    from agents import news_email
+    html = news_email.render_digest_email({"topic": "AI", "text": "No news found for 'AI' this week.", "items": []})
+    assert "No news found for &#x27;AI&#x27; this week." in html or "No news found for 'AI'" in html

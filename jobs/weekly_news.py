@@ -1,9 +1,20 @@
-"""Weekly news digest for the user's field, stored + emailed to you."""
+"""Weekly news digest for the user's field: stored, and emailed to you as
+"The Sa'ei Weekly", a newspaper-style front page (agents/news_email.py)."""
 import config
 from db import get_session, init_db
 from models import NewsDigest, ReportLog
-from agents.news_agent import fetch_news, news_topic, summarize_news
+from agents.news_agent import fetch_news, make_digest, news_topic
+from agents.news_email import render_digest_email
 from agents.reporter_agent import send_report
+
+
+def _reader_name() -> str:
+    try:
+        import profile_store
+        return str(((profile_store.load_profile_dict() or {}).get("contact") or {}).get("full_name") or "")
+    except Exception:  # noqa: BLE001 -- the greeting is optional
+        return ""
+
 
 def run_weekly_news_digest(field: str | None = None):
     """`field` overrides the topic for one run; normally it comes from
@@ -11,14 +22,19 @@ def run_weekly_news_digest(field: str | None = None):
     init_db()
     field = field or news_topic()
     articles = fetch_news(field)
-    summary = summarize_news(field, articles)
+    digest = make_digest(field, articles)
+    summary = digest["text"]
     report_text = f"Weekly news digest ({field}):\n\n{summary}"
 
     with get_session() as session:
+        edition = session.query(NewsDigest).count() + 1
         session.add(NewsDigest(field=field, content=summary))
 
+    # The designed email; report_text stays as its plain-text fallback part.
+    html = render_digest_email(digest, edition=edition, reader=_reader_name())
+
     try:
-        result = send_report(f"Sa'ei weekly news: {field}", report_text)
+        result = send_report(f"The Sa'ei Weekly · {field}", report_text, html=html)
         if result.get("dry_run"):
             status = "dry_run"
         elif "error" in result:

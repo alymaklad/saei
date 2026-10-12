@@ -7,10 +7,11 @@ to connect instead of two, and the reports land where job replies do.
 from agents import email_agent
 
 
-def send_report(subject: str, report_text: str) -> dict:
-    """Emails a report. Never raises for a missing connection: the result
-    carries an "error" instead, which the caller logs."""
-    return email_agent.send_report_email(subject, report_text)
+def send_report(subject: str, report_text: str, html: str | None = None) -> dict:
+    """Emails a report (designed HTML when given, with the text as fallback).
+    Never raises for a missing connection: the result carries an "error"
+    instead, which the caller logs."""
+    return email_agent.send_report_email(subject, report_text, html=html)
 
 
 def build_daily_report(applications_today: list[dict]) -> str:

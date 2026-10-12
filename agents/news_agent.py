@@ -109,9 +109,14 @@ def fetch_news(topic: str, limit: int | None = None) -> list[dict]:
 _CITATION = re.compile(r"\[(\d{1,2})\]")
 
 
-def summarize_news(topic: str, articles: list[dict]) -> str:
+def make_digest(topic: str, articles: list[dict]) -> dict:
+    """The digest as data: {"topic", "text", "items", "articles"}. Each item
+    is one summary point with the articles it cites: {"text", "sources"}.
+    `text` is the plain-text digest (stored, and the email's text part);
+    the designed email is built from `items` (agents/news_email.py)."""
     if not articles:
-        return f"No news found for '{topic}' this week (the news feed couldn't be reached)."
+        return {"topic": topic, "items": [], "articles": [],
+                "text": f"No news found for '{topic}' this week (the news feed couldn't be reached)."}
     numbered = "\n".join(
         f"[{i}] {a['title']}" + (f" ({a['source']}" + (f", {a['date']}" if a.get("date") else "") + ")" if a.get("source") else "")
         + (f" -- {a['snippet']}" if a.get("snippet") else "")
@@ -120,9 +125,10 @@ def summarize_news(topic: str, articles: list[dict]) -> str:
     messages = [
         SystemMessage(content=(
             f"Summarize this week's most important news for someone working as / in: {topic}. "
-            "Group it into themes, 5-8 concise bullet points. Use only the numbered articles "
-            "given. End every bullet with the numbers of the articles it draws on, in square "
-            "brackets, like [2] or [3][7]. Skip articles that aren't relevant to the field. "
+            "Group it into themes, 5-8 concise bullet points, most important first. Use only "
+            "the numbered articles given. End every bullet with the numbers of the articles it "
+            "draws on, in square brackets, like [2] or [3][7]. Skip articles that aren't "
+            "relevant to the field. "
             "You see only headlines: say what they say, and never add details, numbers or "
             "claims a headline doesn't state. "
             "No introduction and no closing remarks."
@@ -130,6 +136,16 @@ def summarize_news(topic: str, articles: list[dict]) -> str:
         HumanMessage(content=numbered),
     ]
     summary = str(get_llm(temperature=0.2).invoke(messages).content).strip()
+
+    items = []
+    for line in summary.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        refs = [int(n) for n in _CITATION.findall(line) if 1 <= int(n) <= len(articles)]
+        text = _CITATION.sub("", re.sub(r"^\s*(?:[-*•]|\d+[.)])\s*", "", line)).strip()
+        if text:
+            items.append({"text": text, "sources": [articles[n - 1] for n in dict.fromkeys(refs)]})
 
     cited = sorted({int(n) for n in _CITATION.findall(summary) if 1 <= int(n) <= len(articles)})
     listed = cited or range(1, len(articles) + 1)
@@ -139,4 +155,10 @@ def summarize_news(topic: str, articles: list[dict]) -> str:
         + f"\n    {articles[i - 1]['link']}"
         for i in listed if articles[i - 1].get("link")
     )
-    return f"{summary}\n\nSources:\n{sources}" if sources else summary
+    text = f"{summary}\n\nSources:\n{sources}" if sources else summary
+    return {"topic": topic, "text": text, "items": items, "articles": articles}
+
+
+def summarize_news(topic: str, articles: list[dict]) -> str:
+    """The digest as plain text (see make_digest)."""
+    return make_digest(topic, articles)["text"]
