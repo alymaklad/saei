@@ -119,6 +119,7 @@ def get_gmail_service():
     threadpool for exactly that reason. GMAIL_AUTH_TIMEOUT_SECONDS bounds how
     long it'll wait so an abandoned tab can't hang the request forever.
     """
+    from google.auth.exceptions import RefreshError
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
@@ -130,7 +131,19 @@ def get_gmail_service():
     if not creds or not creds.valid:
         account_email = oauth_account_email()   # a refresh keeps who it was
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except RefreshError as exc:
+                # Google no longer accepts this sign-in (revoked, or the
+                # 7-day limit for apps still in "Testing"). Set the token
+                # aside, so Settings shows Gmail as not connected rather than
+                # "Connected" over a sign-in that can never send again.
+                expired = f"{config.GMAIL_TOKEN_JSON}.expired"
+                os.replace(config.GMAIL_TOKEN_JSON, expired)
+                raise RuntimeError(
+                    "Your Google sign-in has expired. Open Settings → Email & reports "
+                    "and click Sign in with Google again."
+                ) from exc
         elif not config.GMAIL_INTERACTIVE_AUTH:
             # A server has no browser to open, so the consent flow below would
             # just wait out its timeout (inside a scheduled run, with nobody

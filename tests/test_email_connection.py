@@ -170,3 +170,23 @@ def test_sender_address_comes_from_the_saved_token(gmail, tmp_path):
     config, email_agent, _ = gmail
     _signed_in(config, tmp_path)
     assert email_agent.sender_address() == "me@gmail.com"
+
+
+def test_an_expired_google_sign_in_says_so_and_stops_showing_connected(tmp_path, monkeypatch):
+    import json
+    import config
+    from google.auth.exceptions import RefreshError
+    from google.oauth2.credentials import Credentials
+    from agents import email_agent
+    token = tmp_path / "token.json"
+    token.write_text(json.dumps({"token": "t", "refresh_token": "r", "client_id": "c", "client_secret": "s",
+                                 "expiry": "2020-01-01T00:00:00Z", "account_email": "me@gmail.com"}))
+    monkeypatch.setattr(config, "GMAIL_TOKEN_JSON", str(token))
+
+    def refuse(self, request):
+        raise RefreshError("invalid_grant: Bad Request")
+    monkeypatch.setattr(Credentials, "refresh", refuse)
+    with pytest.raises(RuntimeError, match="sign-in has expired"):
+        email_agent.get_gmail_service()
+    assert not token.exists() and (tmp_path / "token.json.expired").exists()
+    assert not email_agent.oauth_authenticated()
