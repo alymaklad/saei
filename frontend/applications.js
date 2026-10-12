@@ -59,12 +59,22 @@ function statusPill(a) {
   return `<span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-label-sm normal-case tracking-normal ${cls}">${escapeHtml(label + when)}</span>`;
 }
 
+/** The ATS score of the CV that would be sent: the tailored one when there
+ *  is one -- the same number the detail panel's "ATS score" tile shows. */
+function atsCell(a) {
+  const tailored = hasTailored(a) && a.tailored_ats_score != null;
+  const p = pct(tailored ? a.tailored_ats_score : a.ats_score);
+  if (p === null) return `<span class="text-on-surface-variant">—</span>`;
+  const was = tailored && a.ats_score != null ? ` title="Tailored CV · was ${pct(a.ats_score)}%"` : ` title="Master CV"`;
+  return `<span class="text-label-md text-on-surface"${was}>${p}%</span>`;
+}
+
 function listRow(a) {
   const selected = a.id === selectedId;
   const p = pct(a.match_score);
   return `
     <button type="button" data-id="${a.id}"
-      class="grid w-full grid-cols-[1fr_7rem_9rem_2.5rem] items-center gap-space-sm border-l-4 px-space-md py-space-md text-left transition-colors ${selected
+      class="grid w-full grid-cols-[1fr_4.5rem_4.5rem_8.5rem_2rem] items-center gap-space-sm border-l-4 px-space-md py-space-md text-left transition-colors ${selected
         ? "border-primary bg-surface-container-low"
         : "border-transparent hover:bg-surface-container-low/60"}">
       <div class="min-w-0">
@@ -74,6 +84,7 @@ function listRow(a) {
       <span class="flex items-center gap-1.5 text-label-md text-on-surface">${p !== null
         ? `<span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>${p}%`
         : `<span class="text-on-surface-variant">—</span>`}</span>
+      <span>${atsCell(a)}</span>
       <span>${statusPill(a)}</span>
       <span class="ms text-right text-on-surface-variant">arrow_forward</span>
     </button>`;
